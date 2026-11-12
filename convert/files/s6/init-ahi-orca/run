@@ -1,0 +1,13 @@
+#!/usr/bin/with-contenv bash
+# ArtisanHub: OrcaSlicer starts in its dark mode. Only a new /config gets this; an OrcaSlicer.conf that
+# already exists is never changed, so a person's own choice in Preferences stays theirs.
+
+CONF_DIR="/config/.config/OrcaSlicer"
+CONF="${CONF_DIR}/OrcaSlicer.conf"
+
+if [[ ! -e "${CONF}" ]]; then
+  mkdir -p "${CONF_DIR}"
+  printf '{\n\t"app": {\n\t\t"dark_color_mode": "1"\n\t}\n}\n' > "${CONF}"
+  chown abc:abc /config/.config "${CONF_DIR}" "${CONF}"
+  echo "[ahi-init] OrcaSlicer set to start in dark mode"
+fi

@@ -1,0 +1,105 @@
+/* ArtisanHub look for the Selkies dashboard around OrcaSlicer: artisanhub-ui v0.1.0 values (dist/theme.css).
+   Loaded after Selkies' own stylesheet; it changes colours, fonts and radii only, never what is on the page. */
+
+@font-face { font-family: Manrope; font-style: normal; font-weight: 400; font-display: swap; src: url(./fonts/manrope-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 500; font-display: swap; src: url(./fonts/manrope-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 600; font-display: swap; src: url(./fonts/manrope-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: Manrope; font-style: normal; font-weight: 700; font-display: swap; src: url(./fonts/manrope-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: Sora; font-style: normal; font-weight: 500; font-display: swap; src: url(./fonts/sora-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url(./fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); }
+
+:root {
+  --ah-page: #172028;
+  --ah-page-mid: #273642;
+  --ah-page-top: #3f566a;
+  --ah-glass-line: rgba(255,255,255,0.16);
+  --ah-solid-panel: #26343f;
+  --ah-text: #f1f6fa;
+  --ah-accent: #8fd3ff;
+  --ah-on-accent: #1d2a34;
+  --ah-font-sans: Manrope, system-ui, sans-serif;
+  --ah-font-display: Sora, Manrope, system-ui, sans-serif;
+  --ah-font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --ah-page-gradient: radial-gradient(80% 75% at 55% 35%, var(--ah-page-top) 0%, var(--ah-page-mid) 50%, var(--ah-page) 100%);
+  /* The toolbar sits over the live desktop, so its glass is the page colour at 0.86 under a blur. */
+  --ahd-surface: rgba(23,32,40,0.86);
+  color-scheme: dark;
+}
+
+/* The page behind the stream (seen while it connects and at the edges of a scaled desktop). */
+html, body, #app, .video-container { background: var(--ah-page-gradient) fixed, var(--ah-page) !important; }
+body { font-family: var(--ah-font-sans) !important; color: var(--ah-text); }
+
+/* Selkies' dark and light palettes both become the ArtisanHub one: ArtisanHub is dark only. */
+.sidebar, .stream-strip, .sidebar-skin, :root[data-layout=default] [data-slot=dialog-content],
+:root:not(.dark) .sidebar, :root:not(.dark) .stream-strip, :root:not(.dark) .sidebar-skin,
+:root:not(.dark)[data-layout=default] [data-slot=dialog-content] {
+  --sk-accent: #8fd3ff !important;
+  --sk-accent-strong: #bfe6ff !important;
+  --sk-accent-text: #bfe6ff !important;
+  --sk-accent-text-strong: #d4efff !important;
+  --sk-accent-soft: rgba(143,211,255,0.16) !important;
+  --sk-accent-border: rgba(143,211,255,0.55) !important;
+  --sk-violet: #bfe6ff !important;
+  --sk-wordmark-from: #f1f6fa !important;
+  --sk-wordmark-to: #f1f6fa !important;
+  --sk-surface: var(--ahd-surface) !important;
+  --sk-surface-alt: rgba(255,255,255,0.08) !important;
+  --sk-surface-inset: rgba(20,30,38,0.5) !important;
+  --sk-border-soft: rgba(255,255,255,0.12) !important;
+  --sk-border-strong: rgba(255,255,255,0.2) !important;
+  --sk-item-bg-hover: rgba(255,255,255,0.1) !important;
+  --sk-text: #f1f6fa !important;
+  --sk-text-muted: rgba(236,243,248,0.85) !important;
+  --sk-button-bg: #8fd3ff !important;
+  --sk-button-text: #1d2a34 !important;
+  --sk-button-hover-bg: #bfe6ff !important;
+  --sk-shadow: rgba(0,0,0,0.45) !important;
+  --sk-focus-ring: 0 0 0 2px #172028, 0 0 0 4px #8fd3ff !important;
+  --stat-series-1: #8fd3ff !important;
+  --stat-series-2: #ffb38a !important;
+  --stat-good: #9be28f !important;
+  --stat-warn: #ffb38a !important;
+  --sk-icon-sun: #ffb38a !important;
+  --sk-icon-moon: #8fd3ff !important;
+  --destructive: #e66767 !important;
+  --destructive-foreground: #ffd0d0 !important;
+  font-family: var(--ah-font-sans) !important;
+}
+
+/* The toolbar: one glass panel with the sidebar's radius, over the desktop. */
+.sidebar {
+  background-color: var(--ahd-surface) !important;
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid var(--ah-glass-line) !important;
+  border-radius: 0 28px 28px 0;
+}
+.sidebar h2 {
+  font-family: var(--ah-font-display) !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.03em !important;
+  -webkit-text-fill-color: var(--ah-text) !important;
+  background-image: none !important;
+  color: var(--ah-text) !important;
+}
+/* Light mode is not offered. */
+.theme-pill { display: none !important; }
+
+.sidebar-section { border-radius: 18px !important; background-color: rgba(12,20,26,0.24) !important; border-color: rgba(255,255,255,0.12) !important; }
+.sidebar-section-header { border-radius: 18px; }
+.sidebar-section-header h3 { font-size: 12px !important; font-weight: 600 !important; letter-spacing: 0.12em !important; color: rgba(236,243,248,0.85); }
+.sidebar-section-header[aria-expanded=true] h3 { color: #bfe6ff !important; }
+.action-button, .header-action-button { border-radius: 12px !important; }
+.sidebar input, .sidebar select, .sidebar textarea, .sidebar button { font-family: var(--ah-font-sans) !important; }
+.sidebar input, .sidebar select, .sidebar textarea { border-radius: 10px !important; }
+.sidebar code, .sidebar pre, .sidebar kbd { font-family: var(--ah-font-mono) !important; }
+.sidebar a { color: #bfe6ff !important; text-underline-offset: 2px; }
+
+/* The handle that opens the toolbar. */
+.toggle-indicator { background-color: #8fd3ff !important; }
+
+@media (prefers-reduced-transparency: reduce) {
+  :root { --ahd-surface: #26343f; }
+  .sidebar { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

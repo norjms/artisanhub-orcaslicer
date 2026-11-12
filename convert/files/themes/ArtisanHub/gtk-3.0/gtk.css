@@ -1,0 +1,93 @@
+/* ArtisanHub: a dark GTK 3 theme for OrcaSlicer's native controls, from artisanhub-ui v0.1.0.
+   Adwaita dark (built into GTK) underneath, with the artisanhub-ui colours over it. GTK paints opaque colours,
+   so the translucent values of artisanhub-ui are given as their colour over the panel background (#273642).
+   Colours, fonts and radii only: sizes and spacing stay Adwaita's, so no control moves. */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
+
+@define-color theme_bg_color #273642;
+@define-color theme_fg_color #f1f6fa;
+@define-color theme_base_color #1e2a34;
+@define-color theme_text_color #f1f6fa;
+@define-color theme_selected_bg_color #8fd3ff;
+@define-color theme_selected_fg_color #1d2a34;
+@define-color insensitive_bg_color #273642;
+@define-color insensitive_fg_color #7d8890;
+@define-color insensitive_base_color #273642;
+@define-color theme_unfocused_bg_color #273642;
+@define-color theme_unfocused_fg_color #f1f6fa;
+@define-color theme_unfocused_base_color #1e2a34;
+@define-color theme_unfocused_text_color #f1f6fa;
+@define-color theme_unfocused_selected_bg_color #8fd3ff;
+@define-color theme_unfocused_selected_fg_color #1d2a34;
+@define-color borders #525e68;
+@define-color unfocused_borders #525e68;
+@define-color warning_color #ffb38a;
+@define-color error_color #e66767;
+@define-color success_color #9be28f;
+@define-color link_color #bfe6ff;
+
+window, .background, dialog, messagedialog, assistant {
+  background-color: #273642;
+  color: #f1f6fa;
+}
+
+/* Text fields, spin boxes and lists: the field colour with its line. */
+entry, spinbutton:not(.vertical), textview text, iconview, treeview.view, list, .view, .view text {
+  background-color: #1e2a34;
+  color: #f1f6fa;
+  border-color: #525e68;
+}
+entry, spinbutton:not(.vertical) { border-radius: 10px; }
+entry:focus, spinbutton:focus { border-color: #8fd3ff; box-shadow: inset 0 0 0 1px #8fd3ff; }
+entry:disabled, spinbutton:disabled, .view:disabled { color: #7d8890; background-color: #273642; }
+entry selection, textview text selection, .view:selected, .view:selected:focus, treeview.view:selected,
+list row:selected, menuitem:hover, *:selected {
+  background-color: #8fd3ff;
+  color: #1d2a34;
+}
+treeview.view header button { background-color: #26343f; color: rgba(236,243,248,0.85); border-color: #384651; }
+
+/* Buttons: secondary glass by default, accent where GTK marks the default action. */
+button {
+  background-image: none;
+  background-color: #384651;
+  color: #f1f6fa;
+  border-color: #525e68;
+  border-radius: 12px;
+  box-shadow: none;
+  text-shadow: none;
+}
+button:hover { background-color: #3d4a55; }
+button:active, button:checked { background-color: #8fd3ff; color: #1d2a34; border-color: #8fd3ff; }
+button:disabled { background-color: #273642; color: #7d8890; }
+button.suggested-action, button.default { background-color: #8fd3ff; color: #1d2a34; border-color: #8fd3ff; }
+button.destructive-action { background-color: rgba(230,103,103,0.14); color: #ffd0d0; border-color: rgba(230,103,103,0.55); }
+
+/* Check boxes, radio buttons, switches and sliders take the accent. */
+check:checked, radio:checked, check:indeterminate { background-image: none; background-color: #8fd3ff; color: #1d2a34; border-color: #8fd3ff; }
+switch:checked { background-color: #8fd3ff; border-color: #8fd3ff; }
+scale highlight, progressbar progress, levelbar block.filled { background-color: #8fd3ff; border-color: #8fd3ff; }
+scale trough, progressbar trough { background-color: #384651; }
+
+/* Menus, pop-ups and tooltips: the solid panel. */
+menubar, .menubar { background-color: #172028; color: #f1f6fa; }
+menu, .menu, .context-menu, popover, popover.background { background-color: #26343f; color: #f1f6fa; border-color: #3c444a; }
+menu menuitem:disabled, .menu menuitem:disabled { color: #7d8890; }
+menu separator, separator { background-color: #384651; }
+tooltip, tooltip.background { background-color: #26343f; color: #f1f6fa; border: 1px solid #3c444a; border-radius: 10px; }
+tooltip * { color: #f1f6fa; }
+
+/* Tabs, frames and scroll bars. */
+notebook > header { background-color: #172028; border-color: #384651; }
+notebook > header tab { color: rgba(236,243,248,0.85); }
+notebook > header tab:checked { color: #f1f6fa; box-shadow: inset 0 -2px #8fd3ff; }
+notebook > stack:not(:only-child) { background-color: #273642; }
+frame > border, .frame { border-color: #384651; }
+scrollbar, scrollbar trough { background-color: #1e2a34; border-color: #273642; }
+scrollbar slider { background-color: #6b7780; border-radius: 999px; }
+scrollbar slider:hover { background-color: #8fd3ff; }
+headerbar, .titlebar { background-image: none; background-color: #172028; color: #f1f6fa; border-color: #384651; box-shadow: none; }
+
+link, *:link { color: #bfe6ff; }
+.warning, label.warning { color: #ffb38a; }
+.error, label.error { color: #e66767; }

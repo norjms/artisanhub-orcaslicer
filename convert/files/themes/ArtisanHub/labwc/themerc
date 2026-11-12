@@ -1,0 +1,37 @@
+# ArtisanHub: labwc window decoration for the OrcaSlicer web desktop, from artisanhub-ui v0.1.0.
+# Opaque colours: the page (#172028), and text and lines blended over it.
+border.width: 1
+padding.width: 10
+padding.height: 6
+titlebar.height: 30
+
+window.active.border.color: #3c444a
+window.inactive.border.color: #2a3239
+window.active.indicator.toggled-keybind.color: #8fd3ff
+
+window.active.title.bg.color: #172028
+window.inactive.title.bg.color: #172028
+window.active.label.text.color: #f1f6fa
+window.inactive.label.text.color: #b7bec4
+window.label.text.justify: center
+
+window.active.button.unpressed.image.color: #f1f6fa
+window.inactive.button.unpressed.image.color: #b7bec4
+window.active.button.hover.image.color: #8fd3ff
+window.inactive.button.hover.image.color: #8fd3ff
+
+menu.border.width: 1
+menu.border.color: #3c444a
+menu.items.bg.color: #26343f
+menu.items.text.color: #f1f6fa
+menu.items.active.bg.color: #8fd3ff
+menu.items.active.text.color: #1d2a34
+menu.separator.color: #384651
+menu.title.bg.color: #172028
+menu.title.text.color: #f1f6fa
+
+osd.bg.color: #26343f
+osd.border.color: #3c444a
+osd.border.width: 1
+osd.label.text.color: #f1f6fa
+osd.window-switcher.item.active.border.color: #8fd3ff

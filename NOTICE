@@ -1,0 +1,39 @@
+artisanhub-orcaslicer
+Copyright (C) 2026 James Norman
+
+This repository holds the steps that restyle linuxserver.io's OrcaSlicer image for ArtisanHub. It holds no
+copy of that image, of its source or of OrcaSlicer. The image it builds contains the works below, each under
+its own licence, which this repository and the image keep.
+
+linuxserver.io docker-orcaslicer
+  https://github.com/linuxserver/docker-orcaslicer
+  Copyright (C) linuxserver.io. GNU General Public License, version 3 (LICENSE).
+  The image's base, its start-up scripts, its window manager settings (defaults/labwc.xml) and its web server
+  set-up (etc/s6-overlay/s6-rc.d/init-nginx/run) are linuxserver.io's; convert/convert.py changes the last two
+  as described in it. This repository's own files are offered under the same licence, GPL-3.0 (LICENSE).
+
+Selkies
+  https://github.com/selkies-project/selkies
+  The web desktop and its dashboard (usr/share/selkies), Mozilla Public License 2.0 as published with it.
+  The ArtisanHub dashboard is a copy of Selkies' own with one stylesheet added; Selkies' files are not changed.
+
+OrcaSlicer
+  https://github.com/OrcaSlicer/OrcaSlicer
+  Copyright (C) the OrcaSlicer authors. GNU Affero General Public License, version 3 (LICENSES/AGPL-3.0.txt).
+  OrcaSlicer is used as linuxserver.io ships it. convert/convert.py changes colour and font values in five of
+  its web resource files (resources/web/include/global.css, guide/css/dark.css, guide/css/common.css,
+  homepage/css/home.css, dialog/css/common.css); those files, as changed, stay under the AGPL-3.0, and their
+  source is the upstream file and the change in convert/convert.py. OrcaSlicer's source is at the address
+  above, at the tag of the version named in upstream.env.
+
+Fonts
+  Manrope, Sora and JetBrains Mono, SIL Open Font License 1.1: the web fonts from the fontsource packages
+  (their licence files are copied beside them in the image), and Manrope and JetBrains Mono for the desktop
+  from Debian's fonts-manrope and fonts-jetbrains-mono packages.
+
+GTK and Adwaita
+  The ArtisanHub GTK theme imports Adwaita's dark style from the GTK library in the image (LGPL-2.1-or-later)
+  and adds its own colours; no Adwaita file is copied.
+
+ArtisanHub design values
+  Colours and font choices from artisanhub-ui v0.1.0 (MIT), https://github.com/norjms/artisanhub-ui

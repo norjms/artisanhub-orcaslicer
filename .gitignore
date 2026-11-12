@@ -1,0 +1,3 @@
+tests/.upstream/
+*.pyc
+__pycache__/
