@@ -28,6 +28,8 @@ if [ -n "${IMAGE:-}" ]; then
     fc-list | grep -qi manrope
     fc-list | grep -qi "jetbrains mono"
     test -x /etc/s6-overlay/s6-rc.d/init-ahi-orca/run
+    test -x /etc/s6-overlay/s6-rc.d/init-ahi-files/run
+    grep -q "artisanhub-ui.s glass-dark values" /lsiopy/lib/python3.13/site-packages/selkies/stream_server.py
     grep -q "#8fd3ff" /opt/orcaslicer/resources/web/include/global.css
     test -s /usr/share/doc/artisanhub-orcaslicer/NOTICE
     echo "image: every change in place"

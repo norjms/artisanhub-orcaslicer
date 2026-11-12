@@ -12,7 +12,7 @@ linuxserver.io release, and the build applies them to the release named in `upst
 |---|---|
 | `upstream.env` | The upstream image built from: its version tag, the digest that tag must be, and the linuxserver/docker-orcaslicer commit it was built from. Also the fontsource version for the web fonts. |
 | `convert/convert.py` | The restyle, as a script. Each edit names the exact text it changes and stops the build if a release no longer has it. |
-| `convert/files/` | Files added to the image: the dashboard stylesheet, the labwc and GTK themes, GTK's settings, and a start-up step that turns on OrcaSlicer's dark mode for a new `/config`. |
+| `convert/files/` | Files added to the image: the dashboard stylesheet, the labwc and GTK themes, GTK's settings, a start-up step that turns on OrcaSlicer's dark mode for a new `/config`, and one that sets up Files. |
 | `Dockerfile` | Takes the pinned image, adds the fonts, runs the conversion. |
 | `tests/` | `run.sh` takes every file the conversion edits out of the pinned image and tests the conversion on them (they fail if the image lacks one); with `IMAGE=` set it also checks a built image. Needs Docker (`DOCKER="sudo docker"` where the user is not in the docker group) and Python 3. |
 
@@ -26,6 +26,8 @@ linuxserver.io release, and the build applies them to the release named in `upst
 | OrcaSlicer's native controls (GTK 3) | Adwaita, light | Theme `ArtisanHub`: Adwaita dark under the artisanhub-ui colours, Manrope 10 (`/etc/gtk-3.0/settings.ini`) |
 | OrcaSlicer's dark mode | Off | On for a new `/config` (an existing `OrcaSlicer.conf` is never changed) |
 | OrcaSlicer's web pages (home, setup wizard, dialogs) | Orca's dark values (`#2d2d31`, `#009688` ...) | The canvas's colour map: panel `#273642`, sidebar `rgba(255,255,255,0.08)` on `#172028`, accent `#8fd3ff` with dark text on it, text `#f1f6fa`, muted `rgba(236,243,248,0.75)`, field `rgba(20,30,38,0.5)` with a 0.2 white line, error `#e66767`; font Manrope |
+| The web desktop's file panel page (download and upload) | Selkies' pink palette, light and dark | artisanhub-ui colours over the page gradient, dark only, 22px radius; same layout and words |
+| Files (`FILE_MANAGER_PATH`, `/config/Files` as ArtisanHub sets it) | Uploads and downloads in `~/Desktop` | At each start: `Files` and `Files/Exports` exist and belong to the desktop's user, as does a `Send to hub` folder mounted there (never its contents); OrcaSlicer's file dialogs get bookmarks for Files, Library, Exports, Send to hub and Shared when present, ahead of the person's own (which are kept); OrcaSlicer exports to `Exports` and opens from `Files` until the person picks somewhere else (only keys not yet set are added) |
 
 ### Left out: needs OrcaSlicer source changes
 

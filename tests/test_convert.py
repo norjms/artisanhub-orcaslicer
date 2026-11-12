@@ -92,11 +92,21 @@ class Conversion(unittest.TestCase):
         self.assertNotRegex(guide, r"(?i)#009688|#2D2D31")
         for rel in convert.FONT_FILES:
             self.assertIn(convert.FONT_NEW, self.read(rel))
+        # The file panel's page takes the ArtisanHub values after Selkies' own, and is still valid Python.
+        panel = self.read(convert.FILE_PANEL)
+        self.assertLess(panel.index("--accent: #ec4899"), panel.index("--accent: #8fd3ff"))
+        compile(panel, convert.FILE_PANEL, "exec")
         s6 = self.root / convert.S6
         self.assertTrue((s6 / "init-ahi-orca/run").is_file())
         self.assertEqual((s6 / "init-ahi-orca/type").read_text().strip(), "oneshot")
         self.assertTrue((s6 / "init-config-end/dependencies.d/init-ahi-orca").exists())
         self.assertTrue((s6 / "user/contents.d/init-ahi-orca").exists())
+        for name in ("init-ahi-files",):
+            self.assertTrue((s6 / f"{name}/run").is_file())
+            self.assertEqual((s6 / f"{name}/type").read_text().strip(), "oneshot")
+            self.assertTrue((s6 / f"init-config-end/dependencies.d/{name}").exists())
+            self.assertTrue((s6 / f"user/contents.d/{name}").exists())
+            self.assertTrue((s6 / f"{name}/dependencies.d/init-ahi-orca").exists())
 
     def test_the_light_values_are_left_alone(self):
         before = self.read(convert.GLOBAL_CSS)

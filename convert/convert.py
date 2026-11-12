@@ -49,9 +49,11 @@ FONT_FILES = (f"{ORCA_WEB}/guide/css/common.css", f"{ORCA_WEB}/homepage/css/home
               f"{ORCA_WEB}/dialog/css/common.css")
 GTK_SETTINGS = "etc/gtk-3.0/settings.ini"
 S6 = "etc/s6-overlay/s6-rc.d"
+# Selkies' file panel page (the Files the desktop offers for download), built by its Python server.
+FILE_PANEL = "lsiopy/lib/python3.13/site-packages/selkies/stream_server.py"
 
 # Every upstream file the conversion reads or edits. The tests take exactly these out of the pinned image.
-EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK) + FONT_FILES
+EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK, FILE_PANEL) + FONT_FILES
 # Upstream folders the conversion adds to; they must exist.
 FOLDERS = (DASHBOARD_SRC, f"{DASHBOARD_SRC}/assets", "etc/gtk-3.0", "usr/share/themes", f"{S6}/init-config",
            f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d")
@@ -245,12 +247,47 @@ def orca_web(root: Path) -> None:
         edit(root, rel, FONT_OLD, FONT_NEW)
 
 
+# The file panel's page has its own copy of Selkies' palette. The ArtisanHub values go after it, for every
+# theme a browser may have stored (the page is dark only here, like the dashboard).
+FILE_PANEL_ANCHOR = (
+    "            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);\n        }\n        * {\n"
+)
+FILE_PANEL_EXTRA = f"""            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+        }}
+        /* ArtisanHub: artisanhub-ui's glass-dark values, whatever theme is stored. */
+        :root, :root[data-theme], :root:not([data-theme="light"]) {{
+            --accent: {ACCENT};
+            --accent-text: {ACCENT};
+            --accent-soft: rgba(143, 211, 255, 0.14);
+            --bg: {PAGE};
+            --surface: {PAGE_MID};
+            --surface-alt: {SOLID_PANEL};
+            --border-soft: rgba(255, 255, 255, 0.16);
+            --text: {TEXT};
+            --text-muted: rgba(236, 243, 248, 0.85);
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+            --font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            --border-radius: 22px;
+            color-scheme: dark;
+        }}
+        body {{
+            background: radial-gradient(80% 75% at 55% 35%, #3f566a, {PAGE_MID} 50%, {PAGE}) fixed;
+        }}
+        * {{
+"""
+
+
+def file_panel(root: Path) -> None:
+    edit(root, FILE_PANEL, FILE_PANEL_ANCHOR, FILE_PANEL_EXTRA)
+
+
 def dark_by_default(root: Path) -> None:
     s6 = root / S6
     copy_tree(FILES / "s6", s6)
-    (s6 / "init-config-end/dependencies.d/init-ahi-orca").touch()
-    (s6 / "user/contents.d/init-ahi-orca").touch()
-    os.chmod(s6 / "init-ahi-orca/run", 0o755)
+    for name in ("init-ahi-orca", "init-ahi-files"):
+        (s6 / f"init-config-end/dependencies.d/{name}").touch()
+        (s6 / f"user/contents.d/{name}").touch()
+        os.chmod(s6 / f"{name}/run", 0o755)
 
 
 def main(argv: list[str]) -> None:
@@ -265,6 +302,7 @@ def main(argv: list[str]) -> None:
     window_manager(root)
     gtk(root)
     orca_web(root)
+    file_panel(root)
     dark_by_default(root)
     print("convert: done")
 

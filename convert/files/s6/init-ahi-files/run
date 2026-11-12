@@ -1,0 +1,71 @@
+#!/usr/bin/with-contenv bash
+# ArtisanHub: the desktop's Files, which the web desktop's file panel serves (FILE_MANAGER_PATH): uploads from
+# the browser land at the top, downloads come from it. The installer mounts the hub's library at Library
+# (read-only) and the outbox at "Send to hub"; shared folders may be under Shared. Exports is OrcaSlicer's
+# default export folder. OrcaSlicer's file dialogs get a bookmark for each.
+
+FILES="${FILE_MANAGER_PATH:-/config/Files}"
+[[ "${FILES}" == /config/* ]] || exit 0
+
+mkdir -p "${FILES}/Exports"
+# Docker makes the folders it mounts into as root; the person's desktop runs as abc. Only these folders, never
+# what is in them: the library is read-only and the outbox's files are the person's own.
+for d in "${FILES}" "${FILES}/Exports" "${FILES}/Send to hub"; do
+  [[ -d "${d}" && ! -L "${d}" ]] && chown abc:abc "${d}" 2>/dev/null
+done
+
+# Bookmarks: ours first, in this order, then whatever the person added themselves (a line of ours is replaced,
+# never one of theirs, even inside Files).
+BOOKMARKS="/config/.config/gtk-3.0/bookmarks"
+mkdir -p "$(dirname "${BOOKMARKS}")"
+ours=$(mktemp)
+managed=()
+for entry in "Files|${FILES}" "Library|${FILES}/Library" "Exports|${FILES}/Exports" \
+             "Send to hub|${FILES}/Send to hub" "Shared|${FILES}/Shared"; do
+  name="${entry%%|*}"; path="${entry#*|}"; url="file://${path// /%20}"
+  managed+=("${url}")
+  [[ -d "${path}" ]] && printf '%s %s\n' "${url}" "${name}" >> "${ours}"
+done
+{
+  cat "${ours}"
+  if [[ -f "${BOOKMARKS}" ]]; then
+    while IFS= read -r line; do
+      keep=1
+      for url in "${managed[@]}"; do
+        [[ "${line%% *}" == "${url}" ]] && keep=0
+      done
+      (( keep )) && printf '%s\n' "${line}"
+    done < "${BOOKMARKS}"
+  fi
+} > "${BOOKMARKS}.ahi"
+mv "${BOOKMARKS}.ahi" "${BOOKMARKS}"
+rm -f "${ours}"
+chown abc:abc /config/.config "$(dirname "${BOOKMARKS}")" "${BOOKMARKS}"
+
+# OrcaSlicer opens files from Files and exports to Exports until the person picks somewhere else: only keys
+# that are not set yet are added, so a person's own choice stays theirs.
+CONF="/config/.config/OrcaSlicer/OrcaSlicer.conf"
+if [[ -f "${CONF}" ]]; then
+  python3 - "${CONF}" "${FILES}" <<'PY'
+import json, sys
+conf, files = sys.argv[1], sys.argv[2]
+try:
+    with open(conf, encoding="utf-8") as f:
+        data = json.load(f)
+except (OSError, ValueError):
+    sys.exit(0)  # not ours to repair; OrcaSlicer keeps its own
+changed = False
+for section, key, value in (("app", "last_export_path", f"{files}/Exports"), ("recent", "last_opened_folder", files)):
+    part = data.setdefault(section, {})
+    if isinstance(part, dict) and not part.get(key):
+        part[key] = value
+        changed = True
+if changed:
+    with open(conf + ".ahi", "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1)
+    import os
+    os.replace(conf + ".ahi", conf)
+PY
+  chown abc:abc "${CONF}"
+fi
+echo "[ahi-init] Files ready at ${FILES}"
