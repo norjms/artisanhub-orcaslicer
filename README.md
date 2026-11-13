@@ -71,12 +71,12 @@ Only published version tags are taken; `latest`, branches and nightly tags never
 
 ## Building
 
-linuxserver.io publishes this image for **amd64 only** (`v2.5.0-ls49` has no arm64), so it is built for amd64
-alone. The build reads its arguments from `upstream.env`:
+linuxserver.io publishes this image for amd64 and arm64 (the `v2.5.0-ls49` index pinned in `upstream.env` carries
+both), so it is built for both. The build reads its arguments from `upstream.env`:
 
 ```sh
 . ./upstream.env
-docker buildx build --platform linux/amd64 \
+docker buildx build --platform linux/amd64,linux/arm64 \
   --build-arg ORCASLICER_IMAGE="$ORCASLICER_IMAGE" \
   --build-arg ORCASLICER_VERSION="$ORCASLICER_VERSION" \
   --build-arg ORCASLICER_DIGEST="$ORCASLICER_DIGEST" \
