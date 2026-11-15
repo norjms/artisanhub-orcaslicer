@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restyle linuxserver.io's OrcaSlicer image for ArtisanHub: visuals only.
+"""Restyle linuxserver.io's OrcaSlicer image for ArtisanHub, and let the farm open files in it.
 
     python3 convert/convert.py [root]
 
@@ -21,6 +21,11 @@ at run time, with no change to OrcaSlicer's source:
    its colours that live in files are mapped per the OrcaSlicer canvas's colour map: the dark values of the
    web pages' shared colour sheet (home page, setup wizard, dialogs) and the setup wizard's dark sheet, with
    Manrope as the pages' font.
+
+5. Opening files sent from the farm (B49). The installer mounts each desktop's inbox at "From the farm" in
+   Files; svc-ahi-inbox opens what arrives there in the OrcaSlicer already running. That needs OrcaSlicer's
+   "single instance" on and a session bus to find the running window by: svc-ahi-bus runs one before the
+   desktop starts, and init-ahi-orca turns the setting on and names the bus in labwc's environment.
 
 Every edit names text that must be found a set number of times. When an upstream release changes that text,
 or a file the script edits is missing, the script stops and says which, rather than guessing; fix the anchor
@@ -56,7 +61,7 @@ FILE_PANEL = "lsiopy/lib/python3.13/site-packages/selkies/stream_server.py"
 EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK, FILE_PANEL) + FONT_FILES
 # Upstream folders the conversion adds to; they must exist.
 FOLDERS = (DASHBOARD_SRC, f"{DASHBOARD_SRC}/assets", "etc/gtk-3.0", "usr/share/themes", f"{S6}/init-config",
-           f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d")
+           f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d", f"{S6}/svc-de/dependencies.d")
 
 # artisanhub-ui v0.1.0 values (dist/theme.css), and the solid colours they make over the page where a
 # native toolkit cannot blend (GTK and labwc paint opaque colours).
@@ -288,6 +293,12 @@ def dark_by_default(root: Path) -> None:
         (s6 / f"init-config-end/dependencies.d/{name}").touch()
         (s6 / f"user/contents.d/{name}").touch()
         os.chmod(s6 / f"{name}/run", 0o755)
+    # B49: the session bus and the inbox watcher, longruns. The desktop starts after the bus, so OrcaSlicer finds
+    # it; the watcher after the desktop.
+    for name in ("svc-ahi-bus", "svc-ahi-inbox"):
+        (s6 / f"user/contents.d/{name}").touch()
+        os.chmod(s6 / f"{name}/run", 0o755)
+    (s6 / "svc-de/dependencies.d/svc-ahi-bus").touch()
 
 
 def main(argv: list[str]) -> None:

@@ -10,7 +10,7 @@ FILES="${FILE_MANAGER_PATH:-/config/Files}"
 mkdir -p "${FILES}/Exports"
 # Docker makes the folders it mounts into as root; the person's desktop runs as abc. Only these folders, never
 # what is in them: the library is read-only and the outbox's files are the person's own.
-for d in "${FILES}" "${FILES}/Exports" "${FILES}/Send to hub"; do
+for d in "${FILES}" "${FILES}/Exports" "${FILES}/Send to hub" "${FILES}/From the farm"; do
   [[ -d "${d}" && ! -L "${d}" ]] && chown abc:abc "${d}" 2>/dev/null
 done
 
@@ -21,7 +21,7 @@ mkdir -p "$(dirname "${BOOKMARKS}")"
 ours=$(mktemp)
 managed=()
 for entry in "Files|${FILES}" "Library|${FILES}/Library" "Exports|${FILES}/Exports" \
-             "Send to hub|${FILES}/Send to hub" "Shared|${FILES}/Shared"; do
+             "Send to hub|${FILES}/Send to hub" "From the farm|${FILES}/From the farm" "Shared|${FILES}/Shared"; do
   name="${entry%%|*}"; path="${entry#*|}"; url="file://${path// /%20}"
   managed+=("${url}")
   [[ -d "${path}" ]] && printf '%s %s\n' "${url}" "${name}" >> "${ours}"

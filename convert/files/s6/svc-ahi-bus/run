@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv bash
+# ArtisanHub (B49): a session bus for the desktop, which OrcaSlicer's single instance finds its running window
+# by. Started before the desktop (svc-de depends on it); labwc's environment names it (init-ahi-orca).
+RUNTIME="${XDG_RUNTIME_DIR:-/config/.XDG}"
+mkdir -p "${RUNTIME}"
+chown abc:abc "${RUNTIME}"
+rm -f "${RUNTIME}/ahi-bus"
+exec s6-setuidgid abc dbus-daemon --session --nofork --nopidfile --address="unix:path=${RUNTIME}/ahi-bus"

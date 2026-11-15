@@ -1,9 +1,9 @@
 # artisanhub-orcaslicer
 
 OrcaSlicer in the browser for ArtisanHub: [linuxserver.io's OrcaSlicer image](https://github.com/linuxserver/docker-orcaslicer)
-(OrcaSlicer in a Selkies web desktop), restyled to look like the rest of ArtisanHub. **Visuals only:** OrcaSlicer
-keeps every control, layout, icon and word. Only colours and fonts change, and only where they are read from
-files at run time; OrcaSlicer's source is not changed or rebuilt.
+(OrcaSlicer in a Selkies web desktop), restyled to look like the rest of ArtisanHub, and able to open files the
+farm sends it (B49). OrcaSlicer keeps every control, layout, icon and word. Only colours and fonts change, and
+only where they are read from files at run time; OrcaSlicer's source is not changed or rebuilt.
 
 This repository holds no copy of the upstream image. It holds the steps that restyle a published
 linuxserver.io release, and the build applies them to the release named in `upstream.env`:
@@ -28,6 +28,7 @@ linuxserver.io release, and the build applies them to the release named in `upst
 | OrcaSlicer's web pages (home, setup wizard, dialogs) | Orca's dark values (`#2d2d31`, `#009688` ...) | The canvas's colour map: panel `#273642`, sidebar `rgba(255,255,255,0.08)` on `#172028`, accent `#8fd3ff` with dark text on it, text `#f1f6fa`, muted `rgba(236,243,248,0.75)`, field `rgba(20,30,38,0.5)` with a 0.2 white line, error `#e66767`; font Manrope |
 | The web desktop's file panel page (download and upload) | Selkies' pink palette, light and dark | artisanhub-ui colours over the page gradient, dark only, 22px radius; same layout and words |
 | Files (`FILE_MANAGER_PATH`, `/config/Files` as ArtisanHub sets it) | Uploads and downloads in `~/Desktop` | At each start: `Files` and `Files/Exports` exist and belong to the desktop's user, as does a `Send to hub` folder mounted there (never its contents); OrcaSlicer's file dialogs get bookmarks for Files, Library, Exports, Send to hub and Shared when present, ahead of the person's own (which are kept); OrcaSlicer exports to `Exports` and opens from `Files` until the person picks somewhere else (only keys not yet set are added) |
+| Opening files from the farm | None | The installer mounts the desktop's inbox at `Files/From the farm`. The farm's "Open in OrcaSlicer" writes the file there and a marker `.open-<name>`; `svc-ahi-inbox` opens each marked file in the OrcaSlicer already running (or starts one when none has run for a minute), once. For that, OrcaSlicer's "single instance" is turned on at every start and `svc-ahi-bus` gives the desktop a session bus (named in labwc's `environment`) for the running OrcaSlicer to be found on. `From the farm` gets a bookmark too. |
 
 ### Left out: needs OrcaSlicer source changes
 

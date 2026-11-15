@@ -11,3 +11,24 @@ if [[ ! -e "${CONF}" ]]; then
   chown abc:abc /config/.config "${CONF_DIR}" "${CONF}"
   echo "[ahi-init] OrcaSlicer set to start in dark mode"
 fi
+
+# B49: files the farm sends to this desktop open in the OrcaSlicer already running (svc-ahi-inbox). OrcaSlicer
+# hands a file to its running window only with "single instance" on and a session bus to find it by, so both are
+# set on every start: the setting in OrcaSlicer.conf, and the bus (svc-ahi-bus) in labwc's environment, which
+# OrcaSlicer is started from. Without them a sent file would open a second OrcaSlicer.
+if grep -q '"single_instance": false' "${CONF}" 2>/dev/null; then
+  sed -i 's/"single_instance": false/"single_instance": true/' "${CONF}"
+  echo "[ahi-init] OrcaSlicer set to a single instance"
+elif ! grep -q '"single_instance"' "${CONF}" 2>/dev/null; then
+  sed -i '0,/"app": {/s//"app": {\n\t\t"single_instance": true,/' "${CONF}"
+fi
+
+BUS_LINE="DBUS_SESSION_BUS_ADDRESS=unix:path=${XDG_RUNTIME_DIR:-/config/.XDG}/ahi-bus"
+LABWC_ENV="/config/.config/labwc/environment"
+mkdir -p "$(dirname "${LABWC_ENV}")"
+touch "${LABWC_ENV}"
+grep -v '^DBUS_SESSION_BUS_ADDRESS=' "${LABWC_ENV}" > "${LABWC_ENV}.ahi" || true
+printf '%s\n' "${BUS_LINE}" >> "${LABWC_ENV}.ahi"
+grep -q '^NO_AT_BRIDGE=' "${LABWC_ENV}.ahi" || printf 'NO_AT_BRIDGE=1\n' >> "${LABWC_ENV}.ahi"
+mv "${LABWC_ENV}.ahi" "${LABWC_ENV}"
+chown -R abc:abc /config/.config/labwc

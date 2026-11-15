@@ -2,7 +2,7 @@
 #
 # The image comes from upstream.env (passed as build arguments by the release build): its
 # version tag and the digest that tag must be, so a moved tag fails the build instead of changing what is
-# built. Visuals only: OrcaSlicer itself is not rebuilt or changed.
+# built. OrcaSlicer itself is not rebuilt or changed: visuals, and opening files the farm sends (B49).
 
 # The defaults are upstream.env's values, so a plain "docker build ." builds the pinned image; the tests
 # check the two agree.

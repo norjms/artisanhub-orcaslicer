@@ -107,6 +107,14 @@ class Conversion(unittest.TestCase):
             self.assertTrue((s6 / f"init-config-end/dependencies.d/{name}").exists())
             self.assertTrue((s6 / f"user/contents.d/{name}").exists())
             self.assertTrue((s6 / f"{name}/dependencies.d/init-ahi-orca").exists())
+        # B49: the session bus before the desktop, and the inbox watcher after it.
+        for name in ("svc-ahi-bus", "svc-ahi-inbox"):
+            self.assertEqual((s6 / f"{name}/type").read_text().strip(), "longrun")
+            self.assertTrue((s6 / f"user/contents.d/{name}").exists())
+            self.assertTrue(os.access(s6 / f"{name}/run", os.X_OK), name)
+        self.assertTrue((s6 / "svc-de/dependencies.d/svc-ahi-bus").exists())
+        self.assertTrue((s6 / "svc-ahi-inbox/dependencies.d/svc-de").exists())
+        self.assertIn('"single_instance": true', self.read(f"{convert.S6}/init-ahi-orca/run"))
 
     def test_the_light_values_are_left_alone(self):
         before = self.read(convert.GLOBAL_CSS)

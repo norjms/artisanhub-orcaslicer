@@ -1,0 +1,45 @@
+#!/usr/bin/with-contenv bash
+# ArtisanHub (B49): opens what the farm sends to this desktop. The installer mounts this desktop's inbox at
+# "From the farm" in Files; the farm writes the file there, then a marker ".open-<file name>". Each marker is
+# taken once: the file opens in the OrcaSlicer already running (single instance, init-ahi-orca), or starts one
+# when none has been running for a while. A file sent while the desktop was stopped opens when it starts.
+FILES="${FILE_MANAGER_PATH:-/config/Files}"
+INBOX="${FILES}/From the farm"
+RUNTIME="${XDG_RUNTIME_DIR:-/config/.XDG}"
+if [[ ! -d "${INBOX}" ]]; then
+  # No inbox mounted (an installer from before B49): nothing to watch.
+  exec sleep infinity
+fi
+export HOME=/config XDG_RUNTIME_DIR="${RUNTIME}" NO_AT_BRIDGE=1
+export DBUS_SESSION_BUS_ADDRESS="unix:path=${RUNTIME}/ahi-bus"
+# The desktop's display: in Wayland mode it exists only while someone has the desktop open in a browser.
+if [[ "${PIXELFLUX_WAYLAND,,}" == "true" ]]; then
+  export WAYLAND_DISPLAY=wayland-1 DISPLAY=:0
+  display_up() { [[ -S "${RUNTIME}/${WAYLAND_DISPLAY}" ]]; }
+else
+  export DISPLAY="${DISPLAY:-:0}"
+  display_up() { [[ -S "/tmp/.X11-unix/X${DISPLAY#:}" ]]; }
+fi
+started=$(date +%s)
+while true; do
+  sleep 2
+  shopt -s nullglob
+  markers=("${INBOX}"/.open-*)
+  shopt -u nullglob
+  (( ${#markers[@]} )) || continue
+  # Until the desktop is up, sent files wait: they open once someone opens it.
+  display_up || { started=$(date +%s); continue; }
+  # Wait for OrcaSlicer's own start, so a sent file joins its window rather than racing it; after a minute
+  # without one (closed by the person), the file starts one.
+  if ! pgrep -u abc -f /opt/orcaslicer/bin/orca-slicer >/dev/null && (( $(date +%s) - started < 60 )); then
+    continue
+  fi
+  for marker in "${markers[@]}"; do
+    name="${marker##*/.open-}"
+    rm -f "${marker}"
+    file="${INBOX}/${name}"
+    [[ "${name}" != */* && -f "${file}" && ! -L "${file}" ]] || continue
+    echo "[ahi-inbox] opening ${name}"
+    s6-setuidgid abc /opt/orcaslicer/AppRun "${file}" >/dev/null 2>&1 &
+  done
+done
