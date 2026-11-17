@@ -1,0 +1,88 @@
+# Follow linuxserver.io's OrcaSlicer releases (Q7).
+#
+# Every day, and on demand: when linuxserver/docker-orcaslicer has a newer release than upstream.env names (a
+# new OrcaSlicer release, or a new build of the same one), move upstream.env and the Dockerfile's defaults to
+# it, with the digest the tag is now and the commit it was built from, run the tests, commit to main, and
+# publish (publish.yml): the desktop image, the farm's slicing service at the same OrcaSlicer version, and a
+# release ArtisanHub installations read to offer the new version to their people.
+name: upstream
+
+on:
+  schedule:
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: upstream
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      ref: ${{ steps.commit.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: next
+        name: Find linuxserver.io's newest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          . ./upstream.env
+          gh api repos/linuxserver/docker-orcaslicer/releases/latest > release.json
+          tag="$(jq -r .tag_name release.json)"
+          if [ "$(jq -r .prerelease release.json)" != "false" ] || ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-ls[0-9]+$ ]]; then
+            echo "no usable release ($tag)"; exit 0
+          fi
+          if [ "$tag" = "$ORCASLICER_VERSION" ]; then
+            echo "$tag: up to date"; exit 0
+          fi
+          # Only forward: a lower build number or OrcaSlicer version never replaces the pinned one.
+          newest="$(printf '%s\n%s\n' "${ORCASLICER_VERSION#v}" "${tag#v}" | sed 's/-ls/./' | sort -V | tail -1)"
+          if [ "$newest" != "$(echo "${tag#v}" | sed 's/-ls/./')" ]; then
+            echo "$tag is older than $ORCASLICER_VERSION"; exit 0
+          fi
+          digest="$(docker buildx imagetools inspect "$ORCASLICER_IMAGE:$tag" --format '{{json .Manifest}}' | jq -r .digest)"
+          commit="$(gh api "repos/linuxserver/docker-orcaslicer/commits/$tag" --jq .sha)"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] && [[ "$commit" =~ ^[0-9a-f]{40}$ ]]
+          sed -i -e "s/^ORCASLICER_VERSION=.*/ORCASLICER_VERSION=$tag/" \
+                 -e "s/^ORCASLICER_DIGEST=.*/ORCASLICER_DIGEST=$digest/" \
+                 -e "s/^UPSTREAM_COMMIT=.*/UPSTREAM_COMMIT=$commit/" upstream.env
+          sed -i -e "s/^ARG ORCASLICER_VERSION=.*/ARG ORCASLICER_VERSION=$tag/" \
+                 -e "s/^ARG ORCASLICER_DIGEST=.*/ARG ORCASLICER_DIGEST=$digest/" Dockerfile
+          rm release.json
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Test the conversion on the new image
+        if: steps.next.outputs.tag != ''
+        run: bash tests/run.sh
+
+      - id: commit
+        name: Commit to main
+        if: steps.next.outputs.tag != ''
+        env:
+          TAG: ${{ steps.next.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "linuxserver.io OrcaSlicer $TAG"
+          git push origin HEAD:main
+          echo "ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: follow
+    if: needs.follow.outputs.ref != ''
+    uses: ./.github/workflows/publish.yml
+    with:
+      ref: ${{ needs.follow.outputs.ref }}
+    permissions:
+      contents: write
+      packages: write

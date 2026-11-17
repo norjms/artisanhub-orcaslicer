@@ -29,6 +29,7 @@ linuxserver.io release, and the build applies them to the release named in `upst
 | The web desktop's file panel page (download and upload) | Selkies' pink palette, light and dark | artisanhub-ui colours over the page gradient, dark only, 22px radius; same layout and words |
 | Files (`FILE_MANAGER_PATH`, `/config/Files` as ArtisanHub sets it) | Uploads and downloads in `~/Desktop` | At each start: `Files` and `Files/Exports` exist and belong to the desktop's user, as does a `Send to hub` folder mounted there (never its contents); OrcaSlicer's file dialogs get bookmarks for Files, Library, Exports, Send to hub and Shared when present, ahead of the person's own (which are kept); OrcaSlicer exports to `Exports` and opens from `Files` until the person picks somewhere else (only keys not yet set are added) |
 | Opening files from the farm | None | The installer mounts the desktop's inbox at `Files/From the farm`. The farm's "Open in OrcaSlicer" writes the file there and a marker `.open-<name>`; `svc-ahi-inbox` opens each marked file in the OrcaSlicer already running (or starts one when none has run for a minute), once. For that, OrcaSlicer's "single instance" is turned on at every start and `svc-ahi-bus` gives the desktop a session bus (named in labwc's `environment`) for the running OrcaSlicer to be found on. `From the farm` gets a bookmark too. |
+| Web addresses (sign-in pages, help links) | `HARDEN_DESKTOP` takes `xdg-open` away, so OrcaSlicer's "open in browser" does nothing and its sign-ins (Orca Cloud, SimplyPrint, 3DPrinterOS, and the Google and other social accounts they offer) cannot start | `ahi-open-url` opens http and https addresses, and nothing else, in upstream's Firefox. It is `xdg-open`, `$BROWSER` (also in labwc's `environment`, which OrcaSlicer starts from) and the default handler for web addresses (`/etc/xdg/mimeapps.list`), so the sign-in page opens in the desktop and its `http://localhost` answer reaches OrcaSlicer. Firefox runs with policies: no `file://` pages, no developer tools or `about:config`, no saved passwords (a desktop can be shared), downloads to `Files`. |
 
 ### Left out: needs OrcaSlicer source changes
 
@@ -60,19 +61,27 @@ Also seen, and left as upstream shows it:
 
 ## Keeping up with upstream
 
-1. linuxserver.io publishes a new tag (`vX.Y.Z-lsN`). Read its digest:
-   `docker buildx imagetools inspect lscr.io/linuxserver/orcaslicer:vX.Y.Z-lsN` and its commit with
-   `git ls-remote https://github.com/linuxserver/docker-orcaslicer vX.Y.Z-lsN`.
-2. Move the three image lines and `UPSTREAM_COMMIT` in `upstream.env`, and the two `ARG` defaults in the
-   `Dockerfile` to match (a test checks they agree).
-3. Run `tests/run.sh`. If an anchor no longer matches, fix it in `convert/convert.py`.
-4. Build and publish as below; the installer then pins the new image by digest.
+This happens on its own:
 
-Only published version tags are taken; `latest`, branches and nightly tags never are.
+- **`upstream.yml`**, every day and on demand: when linuxserver.io has a newer `vX.Y.Z-lsN` release than
+  `upstream.env` names (a new OrcaSlicer release, or a new build of the same one; never older, never a
+  prerelease, `latest` or a branch), it moves `upstream.env` and the `Dockerfile` defaults to it, with the
+  digest the tag is now and the commit it was built from, runs the tests, commits to `main` and publishes.
+- **`publish.yml`**, on every change to `main` that changes the image, and on demand: tests, builds both
+  architectures, pushes the image, checks the pushed image, makes sure ArtisanHub Farm's slicing service is
+  published at the same OrcaSlicer version (building it from `artisan-hub-farm`'s `slicer/` with OrcaSlicer's
+  own checksums when it is not), and makes a release whose `orcaslicer.json` names both images by digest.
+- ArtisanHub installations read the latest release's `orcaslicer.json` and offer the new version to their
+  people; nothing changes on an installation until someone accepts it there.
+
+By hand, the same steps: read the tag's digest with `docker buildx imagetools inspect
+lscr.io/linuxserver/orcaslicer:vX.Y.Z-lsN` and its commit with `git ls-remote
+https://github.com/linuxserver/docker-orcaslicer vX.Y.Z-lsN`; move the three image lines and `UPSTREAM_COMMIT` in
+`upstream.env` and the two `ARG` defaults in the `Dockerfile` (a test checks they agree); run `tests/run.sh`.
 
 ## Building
 
-linuxserver.io publishes this image for amd64 and arm64 (the `v2.5.0-ls49` index pinned in `upstream.env` carries
+linuxserver.io publishes this image for amd64 and arm64 (the `v2.5.1-ls51` index pinned in `upstream.env` carries
 both), so it is built for both. The build reads its arguments from `upstream.env`:
 
 ```sh
@@ -87,7 +96,7 @@ IMAGE=artisanhub-orcaslicer:local tests/run.sh
 ```
 
 Published images are `ghcr.io/norjms/artisanhub-orcaslicer`, tagged `sha-<commit>`, the upstream version
-(`2.5.0-ls49`) and `latest`. Installs pin an image by digest.
+(`2.5.1-ls51`), the OrcaSlicer version (`2.5.1`) and `latest`. Installs pin an image by digest.
 
 ## How the installer serves it
 
