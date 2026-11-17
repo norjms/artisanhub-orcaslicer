@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bash
+# ArtisanHub: OrcaSlicer's "open in browser" works on the hardened desktop. HARDEN_DESKTOP turns xdg-open off
+# (init-selkies-config, which runs before this); ahi-open-url, which opens only http and https addresses in
+# Firefox, takes its place and is $BROWSER in labwc's environment, which OrcaSlicer is started from.
+OPENER=/usr/local/bin/ahi-open-url
+chmod 755 "${OPENER}" /usr/local/bin/xdg-open
+
+LABWC_ENV="/config/.config/labwc/environment"
+mkdir -p "$(dirname "${LABWC_ENV}")"
+touch "${LABWC_ENV}"
+grep -v '^BROWSER=' "${LABWC_ENV}" > "${LABWC_ENV}.ahi" || true
+printf 'BROWSER=%s\n' "${OPENER}" >> "${LABWC_ENV}.ahi"
+mv "${LABWC_ENV}.ahi" "${LABWC_ENV}"
+chown abc:abc /config/.config "$(dirname "${LABWC_ENV}")" "${LABWC_ENV}"
+echo "[ahi-init] web addresses open in Firefox"

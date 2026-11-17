@@ -1,0 +1,29 @@
+# Tests: the conversion on the pinned linuxserver.io image's files, then a built image checked for every change.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conversion tests
+        run: bash tests/run.sh
+      - name: Build the image (linux/amd64) and check it
+        run: |
+          set -euo pipefail
+          . ./upstream.env
+          docker build -t artisanhub-orcaslicer:ci \
+            --build-arg ORCASLICER_IMAGE="$ORCASLICER_IMAGE" \
+            --build-arg ORCASLICER_VERSION="$ORCASLICER_VERSION" \
+            --build-arg ORCASLICER_DIGEST="$ORCASLICER_DIGEST" \
+            --build-arg FONTSOURCE_VERSION="$FONTSOURCE_VERSION" .
+          IMAGE=artisanhub-orcaslicer:ci bash tests/run.sh

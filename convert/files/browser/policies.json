@@ -1,0 +1,20 @@
+{
+  "policies": {
+    "DisableAppUpdate": true,
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableProfileImport": true,
+    "DisableDeveloperTools": true,
+    "BlockAboutConfig": true,
+    "DontCheckDefaultBrowser": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "OfferToSaveLogins": false,
+    "PasswordManagerEnabled": false,
+    "DefaultDownloadDirectory": "/config/Files",
+    "WebsiteFilter": {
+      "Block": ["file:///*"]
+    }
+  }
+}

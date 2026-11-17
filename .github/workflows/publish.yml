@@ -1,0 +1,178 @@
+# Publish the OrcaSlicer desktop (Q7), for linux/amd64 and linux/arm64, on GitHub's registry:
+#   ghcr.io/norjms/artisanhub-orcaslicer:<version>-ls<build>, :<version>, :latest and :sha-<commit>
+# with ArtisanHub Farm's slicing service at the same OrcaSlicer version (ghcr.io/norjms/artisan-hub-farm-slicer:
+# <version>, built from artisan-hub-farm's slicer/ when it is not published yet), and a release whose
+# orcaslicer.json names both images by digest. ArtisanHub installations read the latest release and offer the
+# new version to their people; nothing is replaced until someone accepts.
+name: publish
+
+on:
+  push:
+    branches: [main]
+    paths: [Dockerfile, upstream.env, "convert/**"]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  DESKTOP: ghcr.io/norjms/artisanhub-orcaslicer
+  SLICER: ghcr.io/norjms/artisan-hub-farm-slicer
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      orca: ${{ steps.v.outputs.orca }}
+      sha: ${{ steps.v.outputs.sha }}
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - id: v
+        run: |
+          set -euo pipefail
+          . ./upstream.env
+          tag="${ORCASLICER_VERSION#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "orca=${tag%%-ls*}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          {
+            echo "args<<ARGS"
+            echo "ORCASLICER_IMAGE=$ORCASLICER_IMAGE"
+            echo "ORCASLICER_VERSION=$ORCASLICER_VERSION"
+            echo "ORCASLICER_DIGEST=$ORCASLICER_DIGEST"
+            echo "FONTSOURCE_VERSION=$FONTSOURCE_VERSION"
+            echo "ARGS"
+          } >> "$GITHUB_OUTPUT"
+      - name: Conversion tests
+        run: bash tests/run.sh
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          build-args: ${{ steps.v.outputs.args }}
+          provenance: false
+          push: true
+          labels: |
+            org.opencontainers.image.revision=${{ steps.v.outputs.sha }}
+          tags: |
+            ${{ env.DESKTOP }}:${{ steps.v.outputs.tag }}
+            ${{ env.DESKTOP }}:${{ steps.v.outputs.orca }}
+            ${{ env.DESKTOP }}:latest
+            ${{ env.DESKTOP }}:sha-${{ steps.v.outputs.sha }}
+      - name: Check the published image
+        run: IMAGE="$DESKTOP@${{ steps.push.outputs.digest }}" bash tests/run.sh
+
+  slicer:
+    needs: desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      digest: ${{ steps.find.outputs.digest || steps.push.outputs.digest }}
+    steps:
+      - id: find
+        name: Published already?
+        run: |
+          set -euo pipefail
+          if digest="$(docker buildx imagetools inspect "$SLICER:${{ needs.desktop.outputs.orca }}" --format '{{json .Manifest}}' 2>/dev/null | jq -r .digest)" \
+             && [[ "$digest" =~ ^sha256: ]]; then
+            echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.find.outputs.digest == ''
+        with:
+          repository: norjms/artisan-hub-farm
+          path: farm
+      - id: args
+        if: steps.find.outputs.digest == ''
+        name: OrcaSlicer's own checksums for the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.desktop.outputs.orca }}
+        run: |
+          set -euo pipefail
+          . farm/slicer/orcaslicer.env
+          gh api "repos/OrcaSlicer/OrcaSlicer/releases/tags/v$VERSION" > release.json
+          sum() { jq -r --arg f "$1" '.assets[] | select(.name == $f) | .digest' release.json | sed 's/^sha256://'; }
+          amd64="$(sum "OrcaSlicer_Linux_AppImage_Ubuntu2404_V$VERSION.AppImage")"
+          arm64="$(sum "OrcaSlicer_Linux_AppImage_Ubuntu2404_aarch64_V$VERSION.AppImage")"
+          [[ "$amd64" =~ ^[0-9a-f]{64}$ ]] && [[ "$arm64" =~ ^[0-9a-f]{64}$ ]]
+          {
+            echo "args<<ARGS"
+            echo "ORCASLICER_VERSION=$VERSION"
+            echo "ORCASLICER_AMD64_SHA256=$amd64"
+            echo "ORCASLICER_ARM64_SHA256=$arm64"
+            echo "ORCA_SLICER_API_COMMIT=$ORCA_SLICER_API_COMMIT"
+            echo "ARGS"
+          } >> "$GITHUB_OUTPUT"
+          echo "farm=$(git -C farm rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+        if: steps.find.outputs.digest == ''
+      - uses: docker/setup-buildx-action@v3
+        if: steps.find.outputs.digest == ''
+      - uses: docker/login-action@v3
+        if: steps.find.outputs.digest == ''
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: push
+        if: steps.find.outputs.digest == ''
+        uses: docker/build-push-action@v6
+        with:
+          context: farm/slicer
+          file: farm/slicer/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: ${{ steps.args.outputs.args }}
+          provenance: false
+          push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/norjms/artisan-hub-farm
+            org.opencontainers.image.revision=${{ steps.args.outputs.farm }}
+          tags: ${{ env.SLICER }}:${{ needs.desktop.outputs.orca }}
+
+  release:
+    needs: [desktop, slicer]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release the pair
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.desktop.outputs.tag }}
+          ORCA: ${{ needs.desktop.outputs.orca }}
+          SHA: ${{ needs.desktop.outputs.sha }}
+          DESKTOP_DIGEST: ${{ needs.desktop.outputs.digest }}
+          SLICER_DIGEST: ${{ needs.slicer.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$DESKTOP_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] && [[ "$SLICER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          jq -n --arg orca "$ORCA" --arg tag "$TAG" --arg sha "$SHA" \
+                --arg desktop "$DESKTOP:$TAG@$DESKTOP_DIGEST" --arg slicer "$SLICER:$ORCA@$SLICER_DIGEST" \
+                '{schema: 1, orcaslicer_version: $orca, desktop_tag: $tag, revision: $sha, desktop_image: $desktop, slicer_image: $slicer}' \
+                > orcaslicer.json
+          name="$TAG-${SHA:0:7}"
+          gh release create "$name" orcaslicer.json --repo "$GITHUB_REPOSITORY" --target "$SHA" --latest \
+            --title "OrcaSlicer $ORCA desktop ($TAG, ${SHA:0:7})" \
+            --notes "OrcaSlicer $ORCA in the web desktop, built from linuxserver.io's $TAG at ${SHA:0:7}, with ArtisanHub Farm's slicing service at the same version. orcaslicer.json names both images by digest; ArtisanHub installations offer it to their people."
