@@ -173,6 +173,10 @@ jobs:
                 '{schema: 1, orcaslicer_version: $orca, desktop_tag: $tag, revision: $sha, desktop_image: $desktop, slicer_image: $slicer}' \
                 > orcaslicer.json
           name="$TAG-${SHA:0:7}"
+          # A run again of the same commit keeps the release it made the first time.
+          if gh release view "$name" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "release $name exists"; exit 0
+          fi
           gh release create "$name" orcaslicer.json --repo "$GITHUB_REPOSITORY" --target "$SHA" --latest \
             --title "OrcaSlicer $ORCA desktop ($TAG, ${SHA:0:7})" \
             --notes "OrcaSlicer $ORCA in the web desktop, built from linuxserver.io's $TAG at ${SHA:0:7}, with ArtisanHub Farm's slicing service at the same version. orcaslicer.json names both images by digest; ArtisanHub installations offer it to their people."
