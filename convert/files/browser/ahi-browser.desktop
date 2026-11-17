@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Web browser
+Comment=Opens web addresses from OrcaSlicer in Firefox (ArtisanHub)
+Exec=/usr/local/bin/ahi-open-url %u
+Icon=firefox
+Terminal=false
+NoDisplay=true
+MimeType=x-scheme-handler/http;x-scheme-handler/https;

@@ -115,6 +115,20 @@ class Conversion(unittest.TestCase):
         self.assertTrue((s6 / "svc-de/dependencies.d/svc-ahi-bus").exists())
         self.assertTrue((s6 / "svc-ahi-inbox/dependencies.d/svc-de").exists())
         self.assertIn('"single_instance": true', self.read(f"{convert.S6}/init-ahi-orca/run"))
+        # Q8: web addresses open in Firefox through ahi-open-url, which stands in for the hardened desktop's xdg-open.
+        for rel in (convert.OPENER, convert.XDG_OPEN):
+            self.assertTrue(os.access(self.root / rel, os.X_OK), rel)
+        self.assertIn("ahi-browser.desktop", self.read(convert.MIMEAPPS))
+        self.assertIn("Exec=/usr/local/bin/ahi-open-url %u", self.read(convert.BROWSER_DESKTOP))
+        import json
+        policies = json.loads(self.read(convert.FIREFOX_POLICIES))["policies"]
+        self.assertEqual(policies["WebsiteFilter"]["Block"], ["file:///*"])
+        self.assertFalse(policies["PasswordManagerEnabled"])
+        self.assertEqual((s6 / "init-ahi-browser/type").read_text().strip(), "oneshot")
+        for dep in ("init-selkies-config", "init-ahi-orca"):
+            self.assertTrue((s6 / f"init-ahi-browser/dependencies.d/{dep}").exists(), dep)
+        self.assertTrue((s6 / "init-config-end/dependencies.d/init-ahi-browser").exists())
+        self.assertTrue((s6 / "user/contents.d/init-ahi-browser").exists())
 
     def test_the_light_values_are_left_alone(self):
         before = self.read(convert.GLOBAL_CSS)
@@ -161,3 +175,32 @@ class StopsOnMissing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OpenerOpensTheWebOnly(unittest.TestCase):
+    """ahi-open-url hands http and https addresses to Firefox and refuses anything else."""
+
+    def run_opener(self, url):
+        import subprocess
+        fake = Path(tempfile.mkdtemp(prefix="ahi-opener-"))
+        opener = fake / "ahi-open-url"
+        body = (REPO / "convert/files/browser/ahi-open-url").read_text().replace("/usr/bin/firefox", str(fake / "firefox"))
+        opener.write_text(body)
+        (fake / "firefox").write_text('#!/bin/sh\necho "$@" > "$(dirname "$0")/opened"\n')
+        os.chmod(opener, 0o755)
+        os.chmod(fake / "firefox", 0o755)
+        done = subprocess.run([str(opener), url], capture_output=True, text=True)
+        opened = (fake / "opened").read_text().strip() if (fake / "opened").exists() else None
+        shutil.rmtree(fake)
+        return done.returncode, opened
+
+    def test_web_addresses_open(self):
+        for url in ("https://orcaslicer.com/login?x=1", "http://localhost:41172/callback"):
+            self.assertEqual(self.run_opener(url), (0, f"--new-tab {url}"))
+
+    def test_anything_else_is_refused(self):
+        for url in ("file:///etc/passwd", "/config", "", "javascript:alert(1)", "-P", "--new-instance"):
+            code, opened = self.run_opener(url)
+            self.assertNotEqual(code, 0, url)
+            self.assertIsNone(opened, url)
+

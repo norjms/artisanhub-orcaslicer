@@ -56,12 +56,21 @@ GTK_SETTINGS = "etc/gtk-3.0/settings.ini"
 S6 = "etc/s6-overlay/s6-rc.d"
 # Selkies' file panel page (the Files the desktop offers for download), built by its Python server.
 FILE_PANEL = "lsiopy/lib/python3.13/site-packages/selkies/stream_server.py"
+# The browser OrcaSlicer opens sign-in pages and links in (Q8): upstream's Firefox, our opener in front of it.
+FIREFOX_INI = "usr/lib/firefox/application.ini"
+FIREFOX_POLICIES = "usr/lib/firefox/distribution/policies.json"
+OPENER = "usr/local/bin/ahi-open-url"
+XDG_OPEN = "usr/local/bin/xdg-open"
+BROWSER_DESKTOP = "usr/share/applications/ahi-browser.desktop"
+MIMEAPPS = "etc/xdg/mimeapps.list"
 
 # Every upstream file the conversion reads or edits. The tests take exactly these out of the pinned image.
-EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK, FILE_PANEL) + FONT_FILES
+EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK, FILE_PANEL,
+          FIREFOX_INI) + FONT_FILES
 # Upstream folders the conversion adds to; they must exist.
 FOLDERS = (DASHBOARD_SRC, f"{DASHBOARD_SRC}/assets", "etc/gtk-3.0", "usr/share/themes", f"{S6}/init-config",
-           f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d", f"{S6}/svc-de/dependencies.d")
+           f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d", f"{S6}/svc-de/dependencies.d",
+           f"{S6}/init-selkies-config", "usr/share/applications", "etc/xdg")
 
 # artisanhub-ui v0.1.0 values (dist/theme.css), and the solid colours they make over the page where a
 # native toolkit cannot blend (GTK and labwc paint opaque colours).
@@ -289,7 +298,7 @@ def file_panel(root: Path) -> None:
 def dark_by_default(root: Path) -> None:
     s6 = root / S6
     copy_tree(FILES / "s6", s6)
-    for name in ("init-ahi-orca", "init-ahi-files"):
+    for name in ("init-ahi-orca", "init-ahi-files", "init-ahi-browser"):
         (s6 / f"init-config-end/dependencies.d/{name}").touch()
         (s6 / f"user/contents.d/{name}").touch()
         os.chmod(s6 / f"{name}/run", 0o755)
@@ -299,6 +308,25 @@ def dark_by_default(root: Path) -> None:
         (s6 / f"user/contents.d/{name}").touch()
         os.chmod(s6 / f"{name}/run", 0o755)
     (s6 / "svc-de/dependencies.d/svc-ahi-bus").touch()
+
+
+def browser(root: Path) -> None:
+    """Q8: OrcaSlicer's sign-in pages and links open in the desktop's Firefox. The hardened desktop has no
+    xdg-open; ahi-open-url (http and https only) stands in for it, is the default handler for web addresses, and
+    Firefox runs with policies that keep it a browser for the web alone (no file:// pages, no developer tools,
+    no saved passwords on a desktop that may be shared)."""
+    if "Name=Firefox" not in text(root, FIREFOX_INI):
+        raise ConvertError(f"convert: {FIREFOX_INI}: not Firefox")
+    src = FILES / "browser"
+    for name, rel, mode in (("ahi-open-url", OPENER, 0o755), ("ahi-open-url", XDG_OPEN, 0o755),
+                            ("ahi-browser.desktop", BROWSER_DESKTOP, 0o644), ("mimeapps.list", MIMEAPPS, 0o644),
+                            ("policies.json", FIREFOX_POLICIES, 0o644)):
+        target = root / rel
+        if target.exists():
+            raise ConvertError(f"convert: {rel}: already in the upstream image")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src / name, target)
+        os.chmod(target, mode)
 
 
 def main(argv: list[str]) -> None:
@@ -315,6 +343,7 @@ def main(argv: list[str]) -> None:
     orca_web(root)
     file_panel(root)
     dark_by_default(root)
+    browser(root)
     print("convert: done")
 
 

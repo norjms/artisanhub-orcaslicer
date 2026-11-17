@@ -35,6 +35,13 @@ if [ -n "${IMAGE:-}" ]; then
     grep -q "artisanhub-ui.s glass-dark values" /lsiopy/lib/python3.13/site-packages/selkies/stream_server.py
     grep -q "#8fd3ff" /opt/orcaslicer/resources/web/include/global.css
     test -s /usr/share/doc/artisanhub-orcaslicer/NOTICE
+    test -x /usr/local/bin/ahi-open-url
+    test -x /usr/local/bin/xdg-open
+    test "$BROWSER" = /usr/local/bin/ahi-open-url
+    grep -q "x-scheme-handler/https=ahi-browser.desktop" /etc/xdg/mimeapps.list
+    grep -q "file:///" /usr/lib/firefox/distribution/policies.json
+    test -x /etc/s6-overlay/s6-rc.d/init-ahi-browser/run
+    ! /usr/local/bin/ahi-open-url file:///etc/passwd 2> /dev/null
     echo "image: every change in place"
   '
 fi

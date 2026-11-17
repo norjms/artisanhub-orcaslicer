@@ -1,0 +1,15 @@
+#!/bin/sh
+# ArtisanHub: open a web address in the desktop's Firefox. OrcaSlicer opens sign-in pages (Orca Cloud, SimplyPrint,
+# 3DPrinterOS and the social accounts they offer) and help links in the system browser; the desktop is hardened
+# (HARDEN_DESKTOP), which takes xdg-open away, so this stands in for it: http and https addresses only, never a
+# file or another program. It is also xdg-open and $BROWSER on the desktop.
+url="${1:-}"
+case "${url}" in
+  http://* | https://*) ;;
+  *)
+    echo "ahi-open-url: only http and https addresses open on this desktop" >&2
+    exit 1
+    ;;
+esac
+# A running Firefox takes the address in a new tab and this returns at once.
+exec /usr/bin/firefox --new-tab "${url}"

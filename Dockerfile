@@ -7,8 +7,8 @@
 # The defaults are upstream.env's values, so a plain "docker build ." builds the pinned image; the tests
 # check the two agree.
 ARG ORCASLICER_IMAGE=lscr.io/linuxserver/orcaslicer
-ARG ORCASLICER_VERSION=v2.5.0-ls49
-ARG ORCASLICER_DIGEST=sha256:4cb6ec5e296898969be71c0a997a375835e268b8cb6bdb59968e7fe3cd6b571b
+ARG ORCASLICER_VERSION=v2.5.1-ls51
+ARG ORCASLICER_DIGEST=sha256:7baa5984a9611c6b5a4cc9c5a9be7ea8447af75b0e1480cd10a6545645373958
 
 # The web fonts for the desktop's page (Manrope, Sora, JetBrains Mono), from the fontsource packages.
 FROM node:22-alpine AS fonts
@@ -38,9 +38,12 @@ COPY convert /tmp/ahi-convert
 COPY --from=fonts /fonts /tmp/ahi-convert/files/dashboard/fonts
 RUN python3 /tmp/ahi-convert/convert.py / && rm -rf /tmp/ahi-convert
 COPY LICENSE NOTICE LICENSES /usr/share/doc/artisanhub-orcaslicer/
+# Q8: web addresses OrcaSlicer opens go to the desktop's Firefox (convert.py's browser step).
 ENV DASHBOARD=artisanhub-dashboard \
-    TITLE=OrcaSlicer
+    TITLE=OrcaSlicer \
+    BROWSER=/usr/local/bin/ahi-open-url
 LABEL org.opencontainers.image.title="artisanhub-orcaslicer" \
+      org.opencontainers.image.source="https://github.com/norjms/artisanhub-orcaslicer" \
       org.opencontainers.image.description="OrcaSlicer in a web desktop, in the ArtisanHub look, built from linuxserver.io's orcaslicer ${ORCASLICER_VERSION}" \
       org.opencontainers.image.licenses="GPL-3.0-only AND AGPL-3.0-only" \
       org.opencontainers.image.version="${ORCASLICER_VERSION}"
