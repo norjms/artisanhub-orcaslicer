@@ -7,8 +7,8 @@
 # The defaults are upstream.env's values, so a plain "docker build ." builds the pinned image; the tests
 # check the two agree.
 ARG ORCASLICER_IMAGE=lscr.io/linuxserver/orcaslicer
-ARG ORCASLICER_VERSION=v2.5.1-ls51
-ARG ORCASLICER_DIGEST=sha256:7baa5984a9611c6b5a4cc9c5a9be7ea8447af75b0e1480cd10a6545645373958
+ARG ORCASLICER_VERSION=v2.5.1-ls52
+ARG ORCASLICER_DIGEST=sha256:b5c483239fd15771df3ea1bf3f0370e7e219eb98e69274b151b9335fc4acd2c9
 
 # The web fonts for the desktop's page (Manrope, Sora, JetBrains Mono), from the fontsource packages.
 FROM node:22-alpine AS fonts
