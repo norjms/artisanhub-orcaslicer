@@ -8,7 +8,7 @@ address as this desktop reaches it, a key, and the farm's printers with the Orca
 taken while OrcaSlicer is not running (init-ahi-farm at start; svc-ahi-inbox when OrcaSlicer closes, which opens
 it again), because OrcaSlicer rewrites its settings when it quits and reads printers only when it starts:
 
-1. The OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0, from artisan-hub-farm, in /opt/ahi/addon) is
+1. The OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0, from openprinthq-farm, in /opt/ahi/addon) is
    installed in orca_plugins, unless the person's own copy is newer or one from Orca Cloud is there. Its
    permission to reach the farm's address is granted, as a person would grant it once at its first start.
 2. The address and key go into the environment OrcaSlicer starts with (OPENPRINTHQ_URL, OPENPRINTHQ_API_KEY):

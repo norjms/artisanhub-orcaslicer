@@ -3,7 +3,7 @@
 # with IMAGE set, check a built image has every change in place.
 #
 #   tests/run.sh                                  conversion tests
-#   IMAGE=artisanhub-orcaslicer:local tests/run.sh   and the built image
+#   IMAGE=openprinthq-orcaslicer:local tests/run.sh   and the built image
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 docker="${DOCKER:-docker}"
