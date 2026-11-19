@@ -1,7 +1,7 @@
 # Publish the OrcaSlicer desktop (Q7), for linux/amd64 and linux/arm64, on GitHub's registry:
-#   ghcr.io/norjms/artisanhub-orcaslicer:<version>-ls<build>, :<version>, :latest and :sha-<commit>
-# with OpenPrintHQ Farm's slicing service at the same OrcaSlicer version (ghcr.io/norjms/artisan-hub-farm-slicer:
-# <version>, built from artisan-hub-farm's slicer/ when it is not published yet), and a release whose
+#   ghcr.io/norjms/openprinthq-orcaslicer:<version>-ls<build>, :<version>, :latest and :sha-<commit>
+# with OpenPrintHQ Farm's slicing service at the same OrcaSlicer version (ghcr.io/norjms/openprinthq-farm-slicer:
+# <version>, built from openprinthq-farm's slicer/ when it is not published yet), and a release whose
 # orcaslicer.json names both images by digest. OpenPrintHQ installations read the latest release and offer the
 # new version to their people; nothing is replaced until someone accepts.
 name: publish
@@ -26,8 +26,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DESKTOP: ghcr.io/norjms/artisanhub-orcaslicer
-  SLICER: ghcr.io/norjms/artisan-hub-farm-slicer
+  DESKTOP: ghcr.io/norjms/openprinthq-orcaslicer
+  SLICER: ghcr.io/norjms/openprinthq-farm-slicer
 
 jobs:
   desktop:
@@ -103,7 +103,7 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.find.outputs.digest == ''
         with:
-          repository: norjms/artisan-hub-farm
+          repository: norjms/openprinthq-farm
           path: farm
       - id: args
         if: steps.find.outputs.digest == ''
@@ -149,7 +149,7 @@ jobs:
           provenance: false
           push: true
           labels: |
-            org.opencontainers.image.source=https://github.com/norjms/artisan-hub-farm
+            org.opencontainers.image.source=https://github.com/norjms/openprinthq-farm
             org.opencontainers.image.revision=${{ steps.args.outputs.farm }}
           tags: ${{ env.SLICER }}:${{ needs.desktop.outputs.orca }}
 

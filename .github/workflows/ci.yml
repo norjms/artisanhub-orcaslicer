@@ -21,9 +21,9 @@ jobs:
         run: |
           set -euo pipefail
           . ./upstream.env
-          docker build -t artisanhub-orcaslicer:ci \
+          docker build -t openprinthq-orcaslicer:ci \
             --build-arg ORCASLICER_IMAGE="$ORCASLICER_IMAGE" \
             --build-arg ORCASLICER_VERSION="$ORCASLICER_VERSION" \
             --build-arg ORCASLICER_DIGEST="$ORCASLICER_DIGEST" \
             --build-arg FONTSOURCE_VERSION="$FONTSOURCE_VERSION" .
-          IMAGE=artisanhub-orcaslicer:ci bash tests/run.sh
+          IMAGE=openprinthq-orcaslicer:ci bash tests/run.sh

@@ -1,4 +1,4 @@
-# artisanhub-orcaslicer
+# openprinthq-orcaslicer
 
 OrcaSlicer in the browser for OpenPrintHQ: [linuxserver.io's OrcaSlicer image](https://github.com/linuxserver/docker-orcaslicer)
 (OrcaSlicer in a Selkies web desktop), restyled to look like the rest of OpenPrintHQ, and able to open files the
@@ -69,7 +69,7 @@ This happens on its own:
   digest the tag is now and the commit it was built from, runs the tests, commits to `main` and publishes.
 - **`publish.yml`**, on every change to `main` that changes the image, and on demand: tests, builds both
   architectures, pushes the image, checks the pushed image, makes sure the farm's slicing service is
-  published at the same OrcaSlicer version (building it from `artisan-hub-farm`'s `slicer/` with OrcaSlicer's
+  published at the same OrcaSlicer version (building it from `openprinthq-farm`'s `slicer/` with OrcaSlicer's
   own checksums when it is not), and makes a release whose `orcaslicer.json` names both images by digest.
 - OpenPrintHQ installations read the latest release's `orcaslicer.json` and offer the new version to their
   people; nothing changes on an installation until someone accepts it there.
@@ -91,11 +91,11 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   --build-arg ORCASLICER_VERSION="$ORCASLICER_VERSION" \
   --build-arg ORCASLICER_DIGEST="$ORCASLICER_DIGEST" \
   --build-arg FONTSOURCE_VERSION="$FONTSOURCE_VERSION" \
-  -t artisanhub-orcaslicer:local .
-IMAGE=artisanhub-orcaslicer:local tests/run.sh
+  -t openprinthq-orcaslicer:local .
+IMAGE=openprinthq-orcaslicer:local tests/run.sh
 ```
 
-Published images are `ghcr.io/norjms/artisanhub-orcaslicer`, tagged `sha-<commit>`, the upstream version
+Published images are `ghcr.io/norjms/openprinthq-orcaslicer`, tagged `sha-<commit>`, the upstream version
 (`2.5.1-ls51`), the OrcaSlicer version (`2.5.1`) and `latest`. Installs pin an image by digest.
 
 ## How the installer serves it
@@ -105,7 +105,7 @@ any port; Caddy reaches it on the stack network.
 
 ```yaml
 orcaslicer:
-  image: ghcr.io/norjms/artisanhub-orcaslicer:sha-<short>@sha256:<digest>
+  image: ghcr.io/norjms/openprinthq-orcaslicer:sha-<short>@sha256:<digest>
   environment:
     PUID: "1000"
     PGID: "1000"
@@ -152,7 +152,7 @@ The hub's Slicing pages link to `/apps/orcaslicer/`.
 
 ```sh
 docker run -d --name orcaslicer -p 127.0.0.1:3000:3000 -e PUID=1000 -e PGID=1000 \
-  --shm-size=1g -v orcaslicer-config:/config ghcr.io/norjms/artisanhub-orcaslicer:latest
+  --shm-size=1g -v orcaslicer-config:/config ghcr.io/norjms/openprinthq-orcaslicer:latest
 ```
 
 Open `http://localhost:3000/`. Everything linuxserver.io documents for its image applies

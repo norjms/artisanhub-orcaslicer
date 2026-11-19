@@ -1,4 +1,4 @@
-# artisanhub-orcaslicer: linuxserver.io's OrcaSlicer image, restyled for OpenPrintHQ by convert/convert.py.
+# openprinthq-orcaslicer: linuxserver.io's OrcaSlicer image, restyled for OpenPrintHQ by convert/convert.py.
 #
 # The image comes from upstream.env (passed as build arguments by the release build): its
 # version tag and the digest that tag must be, so a moved tag fails the build instead of changing what is
@@ -35,12 +35,12 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 # Q9: the OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0) that prints to the hub's queue, from
-# artisan-hub-farm at a pinned commit, checked against its hash. ahi-farm-connect installs it for the person.
+# openprinthq-farm at a pinned commit, checked against its hash. ahi-farm-connect installs it for the person.
 ARG ADDON_COMMIT=b1d5fd07ae219465adccafe178f3fc1039781a54
 ARG ADDON_SHA256=78ec71bb344afd2e3ed86fadcc898d1a86709150e5318b9b07f96bc01d83a172
 RUN mkdir -p /opt/ahi/addon \
  && curl -fsSL -o /opt/ahi/addon/openprinthq_print_queue.py \
-      "https://raw.githubusercontent.com/norjms/artisan-hub-farm/${ADDON_COMMIT}/control-plane/orcaslicer-addon/plugin/openprinthq_print_queue.py" \
+      "https://raw.githubusercontent.com/norjms/openprinthq-farm/${ADDON_COMMIT}/control-plane/orcaslicer-addon/plugin/openprinthq_print_queue.py" \
  && echo "${ADDON_SHA256}  /opt/ahi/addon/openprinthq_print_queue.py" | sha256sum -c - \
  && chmod 644 /opt/ahi/addon/openprinthq_print_queue.py
 COPY convert /tmp/ahi-convert
@@ -52,7 +52,7 @@ ENV DASHBOARD=artisanhub-dashboard \
     TITLE=OrcaSlicer \
     BROWSER=/usr/local/bin/ahi-open-url
 LABEL org.opencontainers.image.title="openprinthq-orcaslicer" \
-      org.opencontainers.image.source="https://github.com/norjms/artisanhub-orcaslicer" \
+      org.opencontainers.image.source="https://github.com/norjms/openprinthq-orcaslicer" \
       org.opencontainers.image.description="OrcaSlicer in a web desktop, in the OpenPrintHQ look, built from linuxserver.io's orcaslicer ${ORCASLICER_VERSION}" \
       org.opencontainers.image.licenses="GPL-3.0-only AND AGPL-3.0-only" \
       org.opencontainers.image.version="${ORCASLICER_VERSION}"

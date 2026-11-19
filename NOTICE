@@ -1,4 +1,4 @@
-artisanhub-orcaslicer
+openprinthq-orcaslicer
 Copyright (C) 2026 James Norman
 
 This repository holds the steps that restyle linuxserver.io's OrcaSlicer image for OpenPrintHQ. It holds no
@@ -27,7 +27,7 @@ OrcaSlicer
   above, at the tag of the version named in upstream.env.
 
 OpenPrintHQ Print Queue (the OrcaSlicer add-on)
-  https://github.com/norjms/artisan-hub-farm (control-plane/orcaslicer-addon)
+  https://github.com/norjms/openprinthq-farm (control-plane/orcaslicer-addon)
   Copyright (C) 2026 James Norman. GNU Affero General Public License, version 3 or later
   (LICENSES/AGPL-3.0.txt). Copied unchanged into /opt/ahi/addon at the commit the Dockerfile names; its source
   is that file at that commit.
@@ -42,4 +42,4 @@ GTK and Adwaita
   and adds its own colours; no Adwaita file is copied.
 
 OpenPrintHQ design values
-  Colours and font choices from openprinthq-ui v0.1.0 (MIT), https://github.com/norjms/artisanhub-ui
+  Colours and font choices from openprinthq-ui v0.1.0 (MIT), https://github.com/norjms/openprinthq-ui
