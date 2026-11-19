@@ -1,4 +1,4 @@
-# ArtisanHub: labwc window decoration for the OrcaSlicer web desktop, from artisanhub-ui v0.1.0.
+# OpenPrintHQ: labwc window decoration for the OrcaSlicer web desktop, from openprinthq-ui v0.1.0.
 # Opaque colours: the page (#172028), and text and lines blended over it.
 border.width: 1
 padding.width: 10

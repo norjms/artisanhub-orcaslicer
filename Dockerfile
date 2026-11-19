@@ -1,4 +1,4 @@
-# artisanhub-orcaslicer: linuxserver.io's OrcaSlicer image, restyled for ArtisanHub by convert/convert.py.
+# artisanhub-orcaslicer: linuxserver.io's OrcaSlicer image, restyled for OpenPrintHQ by convert/convert.py.
 #
 # The image comes from upstream.env (passed as build arguments by the release build): its
 # version tag and the digest that tag must be, so a moved tag fails the build instead of changing what is
@@ -36,8 +36,8 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 # Q9: the OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0) that prints to the hub's queue, from
 # artisan-hub-farm at a pinned commit, checked against its hash. ahi-farm-connect installs it for the person.
-ARG ADDON_COMMIT=4f1ef7cc598085cc417ef8c065e3f44450dc4837
-ARG ADDON_SHA256=6807d4e57e3e03ac661e9809d0565a889a8e2289a02d1ce0a1da5de25b2c8c75
+ARG ADDON_COMMIT=b1d5fd07ae219465adccafe178f3fc1039781a54
+ARG ADDON_SHA256=78ec71bb344afd2e3ed86fadcc898d1a86709150e5318b9b07f96bc01d83a172
 RUN mkdir -p /opt/ahi/addon \
  && curl -fsSL -o /opt/ahi/addon/openprinthq_print_queue.py \
       "https://raw.githubusercontent.com/norjms/artisan-hub-farm/${ADDON_COMMIT}/control-plane/orcaslicer-addon/plugin/openprinthq_print_queue.py" \
@@ -46,13 +46,13 @@ RUN mkdir -p /opt/ahi/addon \
 COPY convert /tmp/ahi-convert
 COPY --from=fonts /fonts /tmp/ahi-convert/files/dashboard/fonts
 RUN python3 /tmp/ahi-convert/convert.py / && rm -rf /tmp/ahi-convert
-COPY LICENSE NOTICE LICENSES /usr/share/doc/artisanhub-orcaslicer/
+COPY LICENSE NOTICE LICENSES /usr/share/doc/openprinthq-orcaslicer/
 # Q8: web addresses OrcaSlicer opens go to the desktop's Firefox (convert.py's browser step).
 ENV DASHBOARD=artisanhub-dashboard \
     TITLE=OrcaSlicer \
     BROWSER=/usr/local/bin/ahi-open-url
-LABEL org.opencontainers.image.title="artisanhub-orcaslicer" \
+LABEL org.opencontainers.image.title="openprinthq-orcaslicer" \
       org.opencontainers.image.source="https://github.com/norjms/artisanhub-orcaslicer" \
-      org.opencontainers.image.description="OrcaSlicer in a web desktop, in the ArtisanHub look, built from linuxserver.io's orcaslicer ${ORCASLICER_VERSION}" \
+      org.opencontainers.image.description="OrcaSlicer in a web desktop, in the OpenPrintHQ look, built from linuxserver.io's orcaslicer ${ORCASLICER_VERSION}" \
       org.opencontainers.image.licenses="GPL-3.0-only AND AGPL-3.0-only" \
       org.opencontainers.image.version="${ORCASLICER_VERSION}"

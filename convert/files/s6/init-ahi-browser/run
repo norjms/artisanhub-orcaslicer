@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bash
-# ArtisanHub: OrcaSlicer's "open in browser" works on the hardened desktop. HARDEN_DESKTOP turns xdg-open off
+# OpenPrintHQ: OrcaSlicer's "open in browser" works on the hardened desktop. HARDEN_DESKTOP turns xdg-open off
 # (init-selkies-config, which runs before this); ahi-open-url, which opens only http and https addresses in
 # Firefox, takes its place and is $BROWSER in labwc's environment, which OrcaSlicer is started from.
 OPENER=/usr/local/bin/ahi-open-url

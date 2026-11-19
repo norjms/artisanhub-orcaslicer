@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bash
-# ArtisanHub: the desktop's Files, which the web desktop's file panel serves (FILE_MANAGER_PATH): uploads from
+# OpenPrintHQ: the desktop's Files, which the web desktop's file panel serves (FILE_MANAGER_PATH): uploads from
 # the browser land at the top, downloads come from it. The installer mounts the hub's library at Library
 # (read-only) and the outbox at "Send to hub"; shared folders may be under Shared. Exports is OrcaSlicer's
 # default export folder. OrcaSlicer's file dialogs get a bookmark for each.

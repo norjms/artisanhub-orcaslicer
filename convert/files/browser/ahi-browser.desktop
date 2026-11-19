@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Web browser
-Comment=Opens web addresses from OrcaSlicer in Firefox (ArtisanHub)
+Comment=Opens web addresses from OrcaSlicer in Firefox (OpenPrintHQ)
 Exec=/usr/local/bin/ahi-open-url %u
 Icon=firefox
 Terminal=false

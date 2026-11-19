@@ -20,13 +20,13 @@ linuxserver.io release, and the build applies them to the release named in `upst
 
 | Where | Before | After |
 |---|---|---|
-| Web desktop page (Selkies dashboard) | Selkies' pink and violet toolbar, Inter, light and dark modes | A copy of the dashboard, `artisanhub-dashboard`, selected with `DASHBOARD`: artisanhub-ui colours (accent `#8fd3ff`, page `#172028`), a glass toolbar with a 28px radius, Manrope with Sora for the wordmark, dark only (the light-mode switch is hidden). Selkies' own `selkies-dashboard` is untouched, so `DASHBOARD=selkies-dashboard` brings it back. |
+| Web desktop page (Selkies dashboard) | Selkies' pink and violet toolbar, Inter, light and dark modes | A copy of the dashboard, `artisanhub-dashboard`, selected with `DASHBOARD`: openprinthq-ui colours (accent `#8fd3ff`, page `#172028`), a glass toolbar with a 28px radius, Manrope with Sora for the wordmark, dark only (the light-mode switch is hidden). Selkies' own `selkies-dashboard` is untouched, so `DASHBOARD=selkies-dashboard` brings it back. |
 | Page install colours (manifest) | `#000000` | `#172028` |
-| Window title bar (labwc) | Clearlooks | Theme `ArtisanHub`: page colour, text `#f1f6fa`, Manrope bold, accent on hover |
-| OrcaSlicer's native controls (GTK 3) | Adwaita, light | Theme `ArtisanHub`: Adwaita dark under the artisanhub-ui colours, Manrope 10 (`/etc/gtk-3.0/settings.ini`) |
+| Window title bar (labwc) | Clearlooks | Theme `OpenPrintHQ`: page colour, text `#f1f6fa`, Manrope bold, accent on hover |
+| OrcaSlicer's native controls (GTK 3) | Adwaita, light | Theme `OpenPrintHQ`: Adwaita dark under the openprinthq-ui colours, Manrope 10 (`/etc/gtk-3.0/settings.ini`) |
 | OrcaSlicer's dark mode | Off | On for a new `/config` (an existing `OrcaSlicer.conf` is never changed) |
 | OrcaSlicer's web pages (home, setup wizard, dialogs) | Orca's dark values (`#2d2d31`, `#009688` ...) | The canvas's colour map: panel `#273642`, sidebar `rgba(255,255,255,0.08)` on `#172028`, accent `#8fd3ff` with dark text on it, text `#f1f6fa`, muted `rgba(236,243,248,0.75)`, field `rgba(20,30,38,0.5)` with a 0.2 white line, error `#e66767`; font Manrope |
-| The web desktop's file panel page (download and upload) | Selkies' pink palette, light and dark | artisanhub-ui colours over the page gradient, dark only, 22px radius; same layout and words |
+| The web desktop's file panel page (download and upload) | Selkies' pink palette, light and dark | openprinthq-ui colours over the page gradient, dark only, 22px radius; same layout and words |
 | Files (`FILE_MANAGER_PATH`, `/config/Files` as OpenPrintHQ sets it) | Uploads and downloads in `~/Desktop` | At each start: `Files` and `Files/Exports` exist and belong to the desktop's user, as does a `Send to hub` folder mounted there (never its contents); OrcaSlicer's file dialogs get bookmarks for Files, Library, Exports, Send to hub and Shared when present, ahead of the person's own (which are kept); OrcaSlicer exports to `Exports` and opens from `Files` until the person picks somewhere else (only keys not yet set are added) |
 | Opening files from the farm | None | The installer mounts the desktop's inbox at `Files/From the farm`. The farm's "Open in OrcaSlicer" writes the file there and a marker `.open-<name>`; `svc-ahi-inbox` opens each marked file in the OrcaSlicer already running (or starts one when none has run for a minute), once. For that, OrcaSlicer's "single instance" is turned on at every start and `svc-ahi-bus` gives the desktop a session bus (named in labwc's `environment`) for the running OrcaSlicer to be found on. `From the farm` gets a bookmark too. |
 | Web addresses (sign-in pages, help links) | `HARDEN_DESKTOP` takes `xdg-open` away, so OrcaSlicer's "open in browser" does nothing and its sign-ins (Orca Cloud, SimplyPrint, 3DPrinterOS, and the Google and other social accounts they offer) cannot start | `ahi-open-url` opens http and https addresses, and nothing else, in upstream's Firefox. It is `xdg-open`, `$BROWSER` (also in labwc's `environment`, which OrcaSlicer starts from) and the default handler for web addresses (`/etc/xdg/mimeapps.list`), so the sign-in page opens in the desktop and its `http://localhost` answer reaches OrcaSlicer. Firefox runs with policies: no `file://` pages, no developer tools or `about:config`, no saved passwords (a desktop can be shared), downloads to `Files`. |
@@ -35,7 +35,7 @@ linuxserver.io release, and the build applies them to the release named in `upst
 
 These are drawn by OrcaSlicer's C++ code with colours compiled into it, so they keep OrcaSlicer's own dark
 colours here. They belong to the OrcaSlicer fork's recolour (retheme Task 10 (b)), which replaces the dark
-colour table from artisanhub-ui's generated C++ header:
+colour table from openprinthq-ui's generated C++ header:
 
 - The dark colour table of OrcaSlicer's own widgets (`StateColor` dark map): tab bar, sidebar, buttons,
   combo boxes, switches, the parameter pages and their accent green.

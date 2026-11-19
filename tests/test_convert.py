@@ -92,7 +92,7 @@ class Conversion(unittest.TestCase):
         self.assertNotRegex(guide, r"(?i)#009688|#2D2D31")
         for rel in convert.FONT_FILES:
             self.assertIn(convert.FONT_NEW, self.read(rel))
-        # The file panel's page takes the ArtisanHub values after Selkies' own, and is still valid Python.
+        # The file panel's page takes the OpenPrintHQ values after Selkies' own, and is still valid Python.
         panel = self.read(convert.FILE_PANEL)
         self.assertLess(panel.index("--accent: #ec4899"), panel.index("--accent: #8fd3ff"))
         compile(panel, convert.FILE_PANEL, "exec")

@@ -1,5 +1,5 @@
 #!/bin/sh
-# ArtisanHub: open a web address in the desktop's Firefox. OrcaSlicer opens sign-in pages (Orca Cloud, SimplyPrint,
+# OpenPrintHQ: open a web address in the desktop's Firefox. OrcaSlicer opens sign-in pages (Orca Cloud, SimplyPrint,
 # 3DPrinterOS and the social accounts they offer) and help links in the system browser; the desktop is hardened
 # (HARDEN_DESKTOP), which takes xdg-open away, so this stands in for it: http and https addresses only, never a
 # file or another program. It is also xdg-open and $BROWSER on the desktop.

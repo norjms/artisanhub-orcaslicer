@@ -1,7 +1,7 @@
 artisanhub-orcaslicer
 Copyright (C) 2026 James Norman
 
-This repository holds the steps that restyle linuxserver.io's OrcaSlicer image for ArtisanHub. It holds no
+This repository holds the steps that restyle linuxserver.io's OrcaSlicer image for OpenPrintHQ. It holds no
 copy of that image, of its source or of OrcaSlicer. The image it builds contains the works below, each under
 its own licence, which this repository and the image keep.
 
@@ -15,7 +15,7 @@ linuxserver.io docker-orcaslicer
 Selkies
   https://github.com/selkies-project/selkies
   The web desktop and its dashboard (usr/share/selkies), Mozilla Public License 2.0 as published with it.
-  The ArtisanHub dashboard is a copy of Selkies' own with one stylesheet added; Selkies' files are not changed.
+  The OpenPrintHQ dashboard is a copy of Selkies' own with one stylesheet added; Selkies' files are not changed.
 
 OrcaSlicer
   https://github.com/OrcaSlicer/OrcaSlicer
@@ -38,8 +38,8 @@ Fonts
   from Debian's fonts-manrope and fonts-jetbrains-mono packages.
 
 GTK and Adwaita
-  The ArtisanHub GTK theme imports Adwaita's dark style from the GTK library in the image (LGPL-2.1-or-later)
+  The OpenPrintHQ GTK theme imports Adwaita's dark style from the GTK library in the image (LGPL-2.1-or-later)
   and adds its own colours; no Adwaita file is copied.
 
-ArtisanHub design values
-  Colours and font choices from artisanhub-ui v0.1.0 (MIT), https://github.com/norjms/artisanhub-ui
+OpenPrintHQ design values
+  Colours and font choices from openprinthq-ui v0.1.0 (MIT), https://github.com/norjms/artisanhub-ui

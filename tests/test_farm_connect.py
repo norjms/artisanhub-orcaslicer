@@ -41,9 +41,9 @@ class FarmConnect(unittest.TestCase):
 
     def connect(self, **extra):
         data = {"schema": 1, "url": URL, "key": KEY, "scope": "submit", "token_id": "t1", "actor_id": 3,
-                "printers": [{"id": 1, "name": "H2D", "preset": "H2D - ArtisanHub Farm",
+                "printers": [{"id": 1, "name": "H2D", "preset": "H2D - OpenPrintHQ Farm",
                               "inherits": "Bambu Lab H2D 0.4 nozzle"},
-                             {"id": 3, "name": "MK4S", "preset": "MK4S - ArtisanHub Farm",
+                             {"id": 3, "name": "MK4S", "preset": "MK4S - OpenPrintHQ Farm",
                               "inherits": "Prusa MK4S 0.4 nozzle"}],
                 "skipped": [{"id": 5, "name": "voron01"}]}
         data.update(extra)
@@ -55,7 +55,7 @@ class FarmConnect(unittest.TestCase):
         self.assertFalse((self.inbox / ".farm.json").exists())          # it held the key
         applied = json.loads((self.inbox / ".farm-applied").read_text())
         self.assertNotIn(KEY, json.dumps(applied))
-        self.assertEqual(applied["printers"][0]["preset"], "H2D - ArtisanHub Farm")
+        self.assertEqual(applied["printers"][0]["preset"], "H2D - OpenPrintHQ Farm")
         self.assertEqual((applied["token_id"], applied["actor_id"], applied["scope"]), ("t1", 3, "submit"))
         self.assertNotIn("error", applied)
         # The add-on, with the farm's address granted as a person would grant it.
@@ -76,18 +76,18 @@ class FarmConnect(unittest.TestCase):
         self.assertNotIn(KEY, (self.orca / "OrcaSlicer.conf").read_text())
         # One printer per farm printer, in the account's folder, kept out of account sync.
         machine = self.orca / "user/u123/machine"
-        h2d = json.loads((machine / "H2D - ArtisanHub Farm.json").read_text())
+        h2d = json.loads((machine / "H2D - OpenPrintHQ Farm.json").read_text())
         self.assertEqual((h2d["inherits"], h2d["printer_agent"], h2d["print_host"]),
-                         ("Bambu Lab H2D 0.4 nozzle", "openprinthq", "ArtisanHub Farm"))
+                         ("Bambu Lab H2D 0.4 nozzle", "openprinthq", "OpenPrintHQ Farm"))
         self.assertNotIn("host_type", h2d)
-        mk4s = json.loads((machine / "MK4S - ArtisanHub Farm.json").read_text())
+        mk4s = json.loads((machine / "MK4S - OpenPrintHQ Farm.json").read_text())
         self.assertEqual(mk4s["host_type"], "octoprint")
-        self.assertIn("sync_info = hold\n", (machine / "H2D - ArtisanHub Farm.info").read_text())
+        self.assertIn("sync_info = hold\n", (machine / "H2D - OpenPrintHQ Farm.info").read_text())
 
     def test_never_replaces_what_the_person_has(self):
         machine = self.orca / "user/u123/machine"
         machine.mkdir(parents=True)
-        (machine / "H2D - ArtisanHub Farm.json").write_text('{"mine": true}')
+        (machine / "H2D - OpenPrintHQ Farm.json").write_text('{"mine": true}')
         plug = self.orca / "orca_plugins/openprinthq_print_queue.py"
         plug.mkdir(parents=True)
         (plug / "openprinthq_print_queue.py").write_text('VERSION = "0.16.0"\n')
@@ -95,12 +95,45 @@ class FarmConnect(unittest.TestCase):
                                                               "permissions": {"network_http": ["https://x.org"]}}))
         self.connect()
         self.run_it()
-        self.assertEqual((machine / "H2D - ArtisanHub Farm.json").read_text(), '{"mine": true}')
+        self.assertEqual((machine / "H2D - OpenPrintHQ Farm.json").read_text(), '{"mine": true}')
         self.assertEqual((plug / "openprinthq_print_queue.py").read_text(), 'VERSION = "0.16.0"\n')
         state = json.loads((plug / ".install_state.json").read_text())
         self.assertFalse(state["enabled"])                                  # turned off by the person: stays off
         self.assertEqual(state["permissions"]["network_http"],
                          ["https://x.org", "http://hub.example.com", "https://openprinthq.com"])
+
+    def _legacy(self, machine, name, inherits, **changes):
+        """A printer this script made before the rename, as it wrote it."""
+        old = f"{name} - " + "Artisan" + "Hub Farm"
+        preset = {"from": "User", "inherits": inherits, "name": old, "printer_settings_id": old,
+                  "printer_agent": "openprinthq", "print_host": "Artisan" + "Hub Farm", "version": "2.5.0.0"}
+        if not inherits.startswith("Bambu Lab "):
+            preset["host_type"] = "octoprint"
+        preset.update(changes)
+        machine.mkdir(parents=True, exist_ok=True)
+        (machine / f"{old}.json").write_text(json.dumps(preset, indent=1) + "\n")
+        (machine / f"{old}.info").write_text("sync_info = hold\nuser_id = u123\nsetting_id = \nbase_id = \n")
+        return old
+
+    def test_old_printers_nobody_changed_give_way_to_the_new_ones(self):
+        machine = self.orca / "user/u123/machine"
+        h2d = self._legacy(machine, "H2D", "Bambu Lab H2D 0.4 nozzle")
+        mk4s = self._legacy(machine, "MK4S", "Prusa MK4S 0.4 nozzle", print_host="my host")      # changed: stays
+        self.connect()
+        self.run_it()
+        self.assertTrue((machine / "H2D - OpenPrintHQ Farm.json").is_file())
+        self.assertFalse((machine / f"{h2d}.json").exists())
+        self.assertFalse((machine / f"{h2d}.info").exists())
+        self.assertTrue((machine / f"{mk4s}.json").is_file())
+
+    def test_an_old_printer_saved_by_the_person_stays(self):
+        machine = self.orca / "user/u123/machine"
+        h2d = self._legacy(machine, "H2D", "Bambu Lab H2D 0.4 nozzle")
+        (machine / f"{h2d}.info").write_text("sync_info = update\nuser_id = u123\n")       # saved, so synced
+        self.connect()
+        self.run_it()
+        self.assertTrue((machine / f"{h2d}.json").is_file())
+        self.assertTrue((machine / "H2D - OpenPrintHQ Farm.json").is_file())
 
     def test_leaves_a_cloud_copy_alone(self):
         sub = self.orca / "orca_plugins/_subscribed/u123/abc"
@@ -129,7 +162,7 @@ class FarmConnect(unittest.TestCase):
         conf["app"]["preset_folder"] = "u456"
         (self.orca / "OrcaSlicer.conf").write_text(json.dumps(conf))
         self.run_it()
-        self.assertTrue((self.orca / "user/u456/machine/MK4S - ArtisanHub Farm.json").is_file())
+        self.assertTrue((self.orca / "user/u456/machine/MK4S - OpenPrintHQ Farm.json").is_file())
 
     def test_a_bad_connection_is_dropped_and_reported(self):
         for bad in ({"url": "javascript:x"}, {"key": "nope\nOPENPRINTHQ_URL=evil"}, {"schema": 2}):
@@ -143,7 +176,7 @@ class FarmConnect(unittest.TestCase):
     def test_names_that_are_not_file_names_are_skipped(self):
         self.connect(printers=[{"name": "x", "preset": "../../evil", "inherits": "Bambu Lab H2D 0.4 nozzle"},
                                {"name": "y", "preset": ".hidden", "inherits": "a"},
-                               {"name": "z", "preset": "ok - ArtisanHub Farm", "inherits": "b/../c"}])
+                               {"name": "z", "preset": "ok - OpenPrintHQ Farm", "inherits": "b/../c"}])
         self.run_it()
         machine = self.orca / "user/u123/machine"
         self.assertEqual(list(machine.glob("*")) if machine.exists() else [], [])

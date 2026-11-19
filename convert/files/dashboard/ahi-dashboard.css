@@ -1,4 +1,4 @@
-/* ArtisanHub look for the Selkies dashboard around OrcaSlicer: artisanhub-ui v0.1.0 values (dist/theme.css).
+/* OpenPrintHQ look for the Selkies dashboard around OrcaSlicer: openprinthq-ui v0.1.0 values (dist/theme.css).
    Loaded after Selkies' own stylesheet; it changes colours, fonts and radii only, never what is on the page. */
 
 @font-face { font-family: Manrope; font-style: normal; font-weight: 400; font-display: swap; src: url(./fonts/manrope-latin-400-normal.woff2) format("woff2"); }
@@ -30,7 +30,7 @@
 html, body, #app, .video-container { background: var(--ah-page-gradient) fixed, var(--ah-page) !important; }
 body { font-family: var(--ah-font-sans) !important; color: var(--ah-text); }
 
-/* Selkies' dark and light palettes both become the ArtisanHub one: ArtisanHub is dark only. */
+/* Selkies' dark and light palettes both become the OpenPrintHQ one: OpenPrintHQ is dark only. */
 .sidebar, .stream-strip, .sidebar-skin, :root[data-layout=default] [data-slot=dialog-content],
 :root:not(.dark) .sidebar, :root:not(.dark) .stream-strip, :root:not(.dark) .sidebar-skin,
 :root:not(.dark)[data-layout=default] [data-slot=dialog-content] {

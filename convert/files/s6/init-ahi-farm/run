@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bash
-# ArtisanHub (Q9): OrcaSlicer in the browser prints to the hub's print queue. Before OrcaSlicer starts, take a
+# OpenPrintHQ (Q9): OrcaSlicer in the browser prints to the hub's print queue. Before OrcaSlicer starts, take a
 # connection the farm left in the inbox, or put back what a connected desktop needs (ahi-farm-connect).
 [[ -x /usr/local/bin/ahi-farm-connect ]] || exit 0
 /usr/local/bin/ahi-farm-connect apply || echo "[ahi-farm] could not connect to the farm this time"

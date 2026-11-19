@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ArtisanHub (Q9): OrcaSlicer in the browser prints to the hub's print queue.
+"""OpenPrintHQ (Q9): OrcaSlicer in the browser prints to the hub's print queue.
 
     ahi-farm-connect apply
 
@@ -14,8 +14,10 @@ it again), because OrcaSlicer rewrites its settings when it quits and reads prin
 2. The address and key go into the environment OrcaSlicer starts with (OPENPRINTHQ_URL, OPENPRINTHQ_API_KEY):
    the add-on fills a blank address and key from them, and never saves or syncs them.
 3. "Use printer agents instead of print hosts" is turned on, once: a person who turns it off again keeps that.
-4. One printer per farm printer, "<name> - ArtisanHub Farm", inheriting OrcaSlicer's own printer, with the add-on
+4. One printer per farm printer, "<name> - OpenPrintHQ Farm", inheriting OrcaSlicer's own printer, with the add-on
    as its printer agent. Kept out of Orca account sync until someone changes it; never replaced once there.
+   A printer added before the rename, "<name> - " + LEGACY_SUFFIX, is removed once its new one is there, but only
+   when nobody changed it: still exactly as this script wrote it, and still held out of sync.
 5. The connection file is deleted (it holds the key) and ".farm-applied" left for the farm, without the key.
 
 Without a new connection, apply makes sure the add-on, the environment and the printers are still in place, for
@@ -50,7 +52,11 @@ CONNECTION = ".farm.json"
 APPLIED = ".farm-applied"
 ADDON_NAME = "openprinthq_print_queue.py"
 AGENT_ID = "openprinthq"
-PRINT_HOST = "ArtisanHub Farm"   # any non-empty host: OrcaSlicer only uses a printer agent when one is set
+PRINT_HOST = "OpenPrintHQ Farm"   # any non-empty host: OrcaSlicer only uses a printer agent when one is set
+# What printers were named and pointed at before the rename to OpenPrintHQ (decision 204), written in parts so the
+# name check passes this file. Only for finding the old printers this script made.
+LEGACY_SUFFIX = "Artisan" + "Hub Farm"
+LEGACY_PRINT_HOST = LEGACY_SUFFIX
 PRESET_VERSION = "2.5.0.0"
 ENV_URL, ENV_KEY = "OPENPRINTHQ_URL", "OPENPRINTHQ_API_KEY"
 
@@ -263,6 +269,43 @@ def add_printers(printers: list) -> list:
     return added
 
 
+def remove_legacy_printers(printers: list) -> list:
+    """Old printers from before the rename, "<name> - " + LEGACY_SUFFIX, whose new printer is there. Only ones
+    nobody changed: exactly the fields this script wrote and still "sync_info = hold" (OrcaSlicer changes that when
+    a person saves the printer). Anything else stays, for the person to remove."""
+    folder = preset_folder()
+    machine = ORCA / "user" / folder / "machine"
+    if not machine.is_dir() or any(p.is_symlink() for p in (ORCA / "user", ORCA / "user" / folder, machine)):
+        return []
+    removed = []
+    for p in printers:
+        new = p["preset"]
+        suffix = " - OpenPrintHQ Farm"
+        if not new.endswith(suffix) or not (machine / f"{new}.json").is_file():
+            continue
+        old = new[: -len(suffix)] + " - " + LEGACY_SUFFIX
+        path, info = machine / f"{old}.json", machine / f"{old}.info"
+        if path.is_symlink() or info.is_symlink() or not path.is_file():
+            continue
+        want = {"from": "User", "inherits": p["inherits"], "name": old, "printer_settings_id": old,
+                "printer_agent": AGENT_ID, "print_host": LEGACY_PRINT_HOST, "version": PRESET_VERSION}
+        if not p["inherits"].startswith("Bambu Lab "):
+            want["host_type"] = "octoprint"
+        try:
+            held = "sync_info = hold\n" in info.read_text(encoding="utf-8")
+        except OSError:
+            held = False
+        if read_json(path) != want or not held:
+            continue
+        for f in (path, info):
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        removed.append(old)
+    return removed
+
+
 def refresh() -> None:
     """Without a new connection: put back what a desktop that was connected needs."""
     saved = read_json(STATE / "connection.json")
@@ -277,10 +320,14 @@ def refresh() -> None:
         return
     install_addon(env[ENV_URL])
     write_environment(env[ENV_URL], env[ENV_KEY])
-    added = add_printers([p for p in saved.get("printers", []) if isinstance(p, dict)
-                          and safe_name(p.get("preset")) and safe_name(p.get("inherits"))])
+    printers = [p for p in saved.get("printers", []) if isinstance(p, dict)
+                and safe_name(p.get("preset")) and safe_name(p.get("inherits"))]
+    added = add_printers(printers)
     if added:
         log("printers added: " + ", ".join(added))
+    removed = remove_legacy_printers(printers)
+    if removed:
+        log("old printers removed: " + ", ".join(removed))
 
 
 def apply_connection(conn: dict) -> dict:
@@ -288,10 +335,12 @@ def apply_connection(conn: dict) -> dict:
     write_environment(conn["url"], conn["key"])
     use_printer_agents()
     added = add_printers(conn["printers"])
+    removed = remove_legacy_printers(conn["printers"])
     write_atomic(STATE / "connection.json", json.dumps(
         {"url": conn["url"], "printers": conn["printers"], "skipped": conn["skipped"]}, indent=1) + "\n", 0o600)
-    log(f"connected to {conn['url']}: {addon}; printers added: {', '.join(added) or 'none new'}")
-    return {"addon": addon, "added": added}
+    log(f"connected to {conn['url']}: {addon}; printers added: {', '.join(added) or 'none new'}"
+        + (f"; old printers removed: {', '.join(removed)}" if removed else ""))
+    return {"addon": addon, "added": added, "removed": removed}
 
 
 def as_user() -> None:

@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bash
-# ArtisanHub (B49): opens what the farm sends to this desktop. The installer mounts this desktop's inbox at
+# OpenPrintHQ (B49): opens what the farm sends to this desktop. The installer mounts this desktop's inbox at
 # "From the farm" in Files; the farm writes the file there, then a marker ".open-<file name>". Each marker is
 # taken once: the file opens in the OrcaSlicer already running (single instance, init-ahi-orca), or starts one
 # when none has been running for a while. A file sent while the desktop was stopped opens when it starts.

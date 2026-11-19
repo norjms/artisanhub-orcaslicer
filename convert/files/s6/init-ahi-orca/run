@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bash
-# ArtisanHub: OrcaSlicer starts in its dark mode. Only a new /config gets this; an OrcaSlicer.conf that
+# OpenPrintHQ: OrcaSlicer starts in its dark mode. Only a new /config gets this; an OrcaSlicer.conf that
 # already exists is never changed, so a person's own choice in Preferences stays theirs.
 
 CONF_DIR="/config/.config/OrcaSlicer"

@@ -1,8 +1,8 @@
 # Publish the OrcaSlicer desktop (Q7), for linux/amd64 and linux/arm64, on GitHub's registry:
 #   ghcr.io/norjms/artisanhub-orcaslicer:<version>-ls<build>, :<version>, :latest and :sha-<commit>
-# with ArtisanHub Farm's slicing service at the same OrcaSlicer version (ghcr.io/norjms/artisan-hub-farm-slicer:
+# with OpenPrintHQ Farm's slicing service at the same OrcaSlicer version (ghcr.io/norjms/artisan-hub-farm-slicer:
 # <version>, built from artisan-hub-farm's slicer/ when it is not published yet), and a release whose
-# orcaslicer.json names both images by digest. ArtisanHub installations read the latest release and offer the
+# orcaslicer.json names both images by digest. OpenPrintHQ installations read the latest release and offer the
 # new version to their people; nothing is replaced until someone accepts.
 name: publish
 
@@ -179,4 +179,4 @@ jobs:
           fi
           gh release create "$name" orcaslicer.json --repo "$GITHUB_REPOSITORY" --target "$SHA" --latest \
             --title "OrcaSlicer $ORCA desktop ($TAG, ${SHA:0:7})" \
-            --notes "OrcaSlicer $ORCA in the web desktop, built from linuxserver.io's $TAG at ${SHA:0:7}, with ArtisanHub Farm's slicing service at the same version. orcaslicer.json names both images by digest; ArtisanHub installations offer it to their people."
+            --notes "OrcaSlicer $ORCA in the web desktop, built from linuxserver.io's $TAG at ${SHA:0:7}, with OpenPrintHQ Farm's slicing service at the same version. orcaslicer.json names both images by digest; OpenPrintHQ installations offer it to their people."
