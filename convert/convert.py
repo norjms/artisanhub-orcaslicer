@@ -27,6 +27,11 @@ at run time, with no change to OrcaSlicer's source:
    "single instance" on and a session bus to find the running window by: svc-ahi-bus runs one before the
    desktop starts, and init-ahi-orca turns the setting on and names the bus in labwc's environment.
 
+6. Printing to the hub's print queue (Q9). The farm leaves a connection in the inbox; ahi-farm-connect installs
+   the OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0, put in /opt/ahi/addon by the Dockerfile), gives it
+   the farm's address and key, and adds one printer per farm printer. init-ahi-farm runs it before OrcaSlicer
+   starts, svc-ahi-inbox when OrcaSlicer closes (and opens it again).
+
 Every edit names text that must be found a set number of times. When an upstream release changes that text,
 or a file the script edits is missing, the script stops and says which, rather than guessing; fix the anchor
 here and run it again.
@@ -63,6 +68,9 @@ OPENER = "usr/local/bin/ahi-open-url"
 XDG_OPEN = "usr/local/bin/xdg-open"
 BROWSER_DESKTOP = "usr/share/applications/ahi-browser.desktop"
 MIMEAPPS = "etc/xdg/mimeapps.list"
+# Q9: prints from OrcaSlicer go to the hub's print queue, through the OrcaSlicer add-on (the Dockerfile puts it in
+# /opt/ahi/addon); ahi-farm-connect takes the farm's connection (init-ahi-farm, svc-ahi-inbox).
+FARM_CONNECT = "usr/local/bin/ahi-farm-connect"
 
 # Every upstream file the conversion reads or edits. The tests take exactly these out of the pinned image.
 EDITED = (f"{DASHBOARD_SRC}/index.html", LABWC_RC, INIT_NGINX, GLOBAL_CSS, GUIDE_DARK, FILE_PANEL,
@@ -298,7 +306,7 @@ def file_panel(root: Path) -> None:
 def dark_by_default(root: Path) -> None:
     s6 = root / S6
     copy_tree(FILES / "s6", s6)
-    for name in ("init-ahi-orca", "init-ahi-files", "init-ahi-browser"):
+    for name in ("init-ahi-orca", "init-ahi-files", "init-ahi-browser", "init-ahi-farm"):
         (s6 / f"init-config-end/dependencies.d/{name}").touch()
         (s6 / f"user/contents.d/{name}").touch()
         os.chmod(s6 / f"{name}/run", 0o755)
@@ -329,6 +337,18 @@ def browser(root: Path) -> None:
         os.chmod(target, mode)
 
 
+def farm(root: Path) -> None:
+    """Q9: OrcaSlicer prints to the hub's print queue. The farm leaves a connection in the inbox; ahi-farm-connect
+    installs the add-on, gives it the farm's address and key, and adds the farm's printers (its docstring has the
+    details). init-ahi-farm runs it before OrcaSlicer starts, svc-ahi-inbox when OrcaSlicer closes."""
+    target = root / FARM_CONNECT
+    if target.exists():
+        raise ConvertError(f"convert: {FARM_CONNECT}: already in the upstream image")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(FILES / "farm" / "ahi-farm-connect", target)
+    os.chmod(target, 0o755)
+
+
 def main(argv: list[str]) -> None:
     root = Path(argv[1] if len(argv) > 1 else "/").resolve()
     for rel in EDITED:
@@ -344,6 +364,7 @@ def main(argv: list[str]) -> None:
     file_panel(root)
     dark_by_default(root)
     browser(root)
+    farm(root)
     print("convert: done")
 
 
