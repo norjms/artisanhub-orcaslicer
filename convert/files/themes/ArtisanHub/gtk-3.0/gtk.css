@@ -1,6 +1,6 @@
-/* ArtisanHub: a dark GTK 3 theme for OrcaSlicer's native controls, from artisanhub-ui v0.1.0.
-   Adwaita dark (built into GTK) underneath, with the artisanhub-ui colours over it. GTK paints opaque colours,
-   so the translucent values of artisanhub-ui are given as their colour over the panel background (#273642).
+/* OpenPrintHQ: a dark GTK 3 theme for OrcaSlicer's native controls, from openprinthq-ui v0.1.0.
+   Adwaita dark (built into GTK) underneath, with the openprinthq-ui colours over it. GTK paints opaque colours,
+   so the translucent values of openprinthq-ui are given as their colour over the panel background (#273642).
    Colours, fonts and radii only: sizes and spacing stay Adwaita's, so no control moves. */
 @import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
 

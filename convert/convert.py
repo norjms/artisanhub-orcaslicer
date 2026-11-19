@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restyle linuxserver.io's OrcaSlicer image for ArtisanHub, and let the farm open files in it.
+"""Restyle linuxserver.io's OrcaSlicer image for OpenPrintHQ, and let the farm open files in it.
 
     python3 convert/convert.py [root]
 
@@ -9,13 +9,13 @@ at run time, with no change to OrcaSlicer's source:
 
 1. The web desktop's page. Selkies' dashboard is copied to a new dashboard, "artisanhub-dashboard", which the
    image selects with DASHBOARD. The copy loads ahi-dashboard.css after Selkies' own stylesheet: Manrope and
-   Sora, the artisanhub-ui colours on the toolbar and its handle, glass panels, and no light-mode switch
-   (ArtisanHub is dark only). The page's install colours (manifest) become the page colour.
+   Sora, the openprinthq-ui colours on the toolbar and its handle, glass panels, and no light-mode switch
+   (OpenPrintHQ is dark only). The page's install colours (manifest) become the page colour.
 2. The window manager. labwc draws the window title bar; its theme becomes "ArtisanHub" (colours from
-   artisanhub-ui, title in Manrope).
+   openprinthq-ui, title in Manrope).
 3. GTK. OrcaSlicer's Linux build is wxWidgets on GTK 3, which takes native controls (text fields, lists,
    menus, dialogs, scroll bars, tooltips) from the GTK theme. The default is Adwaita, light. A theme
-   "ArtisanHub" is added (Adwaita dark under the artisanhub-ui colours) and set with Manrope as the font in
+   "ArtisanHub" is added (Adwaita dark under the openprinthq-ui colours) and set with Manrope as the font in
    /etc/gtk-3.0/settings.ini.
 4. OrcaSlicer's own dark mode. Turned on for a new /config (an existing OrcaSlicer.conf is never changed), and
    its colours that live in files are mapped per the OrcaSlicer canvas's colour map: the dark values of the
@@ -80,7 +80,7 @@ FOLDERS = (DASHBOARD_SRC, f"{DASHBOARD_SRC}/assets", "etc/gtk-3.0", "usr/share/t
            f"{S6}/init-config-end/dependencies.d", f"{S6}/user/contents.d", f"{S6}/svc-de/dependencies.d",
            f"{S6}/init-selkies-config", "usr/share/applications", "etc/xdg")
 
-# artisanhub-ui v0.1.0 values (dist/theme.css), and the solid colours they make over the page where a
+# openprinthq-ui v0.1.0 values (dist/theme.css), and the solid colours they make over the page where a
 # native toolkit cannot blend (GTK and labwc paint opaque colours).
 PAGE = "#172028"         # --ah-page
 PAGE_MID = "#273642"     # --ah-page-mid: window and panel background, per the canvas's colour map
@@ -124,7 +124,7 @@ GLOBAL_DARK = {
     "--button-bg-hover": HOVER,
     "--button-bg-alert": FAILURE,
 }
-# The setup wizard's dark sheet: each OrcaSlicer colour found there, and its ArtisanHub colour.
+# The setup wizard's dark sheet: each OrcaSlicer colour found there, and its OpenPrintHQ colour.
 GUIDE_COLOURS = {
     "#efeff0": TEXT, "#B9B9BC": FIELD_LINE, "#2D2D31": PAGE_MID, "#939594": MUTED, "#161817": PAGE,
     "#009688": ACCENT, "#4A4A51": FIELD, "#BEBEC0": TEXT_2, "#4C4C55": HOVER,
@@ -132,10 +132,10 @@ GUIDE_COLOURS = {
 # Selected rows in the wizard are accent coloured, so their text is dark.
 GUIDE_SELECTED = ("\tbackground-color:#009688;\n\tcolor: #fff;", f"\tbackground-color:{ACCENT};\n\tcolor: {ON_ACCENT};")
 # The wizard's own sheets (guide/<n>/*.css, guide/css/common.css) colour its title, loading line, links and
-# selected region in Orca green. The dark sheet (loaded in dark mode only) gets the ArtisanHub values for them,
+# selected region in Orca green. The dark sheet (loaded in dark mode only) gets the OpenPrintHQ values for them,
 # with selectors that outrank the page sheets linked after it. The light values stay as they are.
 GUIDE_DARK_EXTRA = f"""
-/*---ArtisanHub: colours the wizard's other sheets set, in dark mode---*/
+/*---OpenPrintHQ: colours the wizard's other sheets set, in dark mode---*/
 html
 {{
 	background-color: {PAGE_MID};
@@ -240,7 +240,7 @@ def window_manager(root: Path) -> None:
 
 def gtk(root: Path) -> None:
     if (root / GTK_SETTINGS).exists():
-        raise ConvertError(f"convert: {GTK_SETTINGS}: upstream now ships one; merge the ArtisanHub settings into it")
+        raise ConvertError(f"convert: {GTK_SETTINGS}: upstream now ships one; merge the OpenPrintHQ settings into it")
     shutil.copy2(FILES / "gtk-settings.ini", root / GTK_SETTINGS)
 
 
@@ -269,14 +269,14 @@ def orca_web(root: Path) -> None:
         edit(root, rel, FONT_OLD, FONT_NEW)
 
 
-# The file panel's page has its own copy of Selkies' palette. The ArtisanHub values go after it, for every
+# The file panel's page has its own copy of Selkies' palette. The OpenPrintHQ values go after it, for every
 # theme a browser may have stored (the page is dark only here, like the dashboard).
 FILE_PANEL_ANCHOR = (
     "            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);\n        }\n        * {\n"
 )
 FILE_PANEL_EXTRA = f"""            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
         }}
-        /* ArtisanHub: artisanhub-ui's glass-dark values, whatever theme is stored. */
+        /* OpenPrintHQ: openprinthq-ui's glass-dark values, whatever theme is stored. */
         :root, :root[data-theme], :root:not([data-theme="light"]) {{
             --accent: {ACCENT};
             --accent-text: {ACCENT};

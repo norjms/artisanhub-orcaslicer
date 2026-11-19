@@ -4,7 +4,7 @@
 # new OrcaSlicer release, or a new build of the same one), move upstream.env and the Dockerfile's defaults to
 # it, with the digest the tag is now and the commit it was built from, run the tests, commit to main, and
 # publish (publish.yml): the desktop image, the farm's slicing service at the same OrcaSlicer version, and a
-# release ArtisanHub installations read to offer the new version to their people.
+# release OpenPrintHQ installations read to offer the new version to their people.
 name: upstream
 
 on:
