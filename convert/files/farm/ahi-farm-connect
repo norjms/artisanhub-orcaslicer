@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""ArtisanHub (Q9): OrcaSlicer in the browser prints to the hub's print queue.
+
+    ahi-farm-connect apply
+
+The farm writes a connection, ".farm.json", into this desktop's inbox ("From the farm" in Files): the farm's
+address as this desktop reaches it, a key, and the farm's printers with the OrcaSlicer printer each one is. It is
+taken while OrcaSlicer is not running (init-ahi-farm at start; svc-ahi-inbox when OrcaSlicer closes, which opens
+it again), because OrcaSlicer rewrites its settings when it quits and reads printers only when it starts:
+
+1. The OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0, from artisan-hub-farm, in /opt/ahi/addon) is
+   installed in orca_plugins, unless the person's own copy is newer or one from Orca Cloud is there. Its
+   permission to reach the farm's address is granted, as a person would grant it once at its first start.
+2. The address and key go into the environment OrcaSlicer starts with (OPENPRINTHQ_URL, OPENPRINTHQ_API_KEY):
+   the add-on fills a blank address and key from them, and never saves or syncs them.
+3. "Use printer agents instead of print hosts" is turned on, once: a person who turns it off again keeps that.
+4. One printer per farm printer, "<name> - ArtisanHub Farm", inheriting OrcaSlicer's own printer, with the add-on
+   as its printer agent. Kept out of Orca account sync until someone changes it; never replaced once there.
+5. The connection file is deleted (it holds the key) and ".farm-applied" left for the farm, without the key.
+
+Without a new connection, apply makes sure the add-on, the environment and the printers are still in place, for
+example in a new account's preset folder after someone signs in to OrcaSlicer.
+
+Runs as root to read the farm's file, then as the desktop's user (abc) for everything it writes, so nothing in
+the person's folders can point a write outside them.
+"""
+
+from __future__ import annotations
+
+import errno
+import json
+import os
+import re
+import shutil
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(os.environ.get("AHI_CONFIG_ROOT", "/config"))
+FILES = Path(os.environ.get("FILE_MANAGER_PATH") or ROOT / "Files")
+INBOX = FILES / "From the farm"
+ORCA = ROOT / ".config" / "OrcaSlicer"
+STATE = ROOT / ".config" / "ahi-farm"
+LABWC_ENV = ROOT / ".config" / "labwc" / "environment"
+ADDON = Path(os.environ.get("AHI_FARM_ADDON", "/opt/ahi/addon/openprinthq_print_queue.py"))
+USER = os.environ.get("AHI_FARM_USER", "abc")
+
+CONNECTION = ".farm.json"
+APPLIED = ".farm-applied"
+ADDON_NAME = "openprinthq_print_queue.py"
+AGENT_ID = "openprinthq"
+PRINT_HOST = "ArtisanHub Farm"   # any non-empty host: OrcaSlicer only uses a printer agent when one is set
+PRESET_VERSION = "2.5.0.0"
+ENV_URL, ENV_KEY = "OPENPRINTHQ_URL", "OPENPRINTHQ_API_KEY"
+
+URL_RE = re.compile(r"^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$")
+KEY_RE = re.compile(r"^ophqk_[A-Za-z0-9_-]{20,128}$")
+NAME_RE = re.compile(r"^[^\x00-\x1f\x7f/\\:*?\"<>|]{1,120}$")
+
+
+def log(msg: str) -> None:
+    print(f"[ahi-farm] {msg}", flush=True)
+
+
+def version_tuple(v: str) -> tuple:
+    return tuple(int(x) for x in re.findall(r"\d+", v or "")[:4]) or (0,)
+
+
+def addon_version(text: str) -> str:
+    m = re.search(r'^VERSION = "([^"]+)"$', text, re.M)
+    return m.group(1) if m else ""
+
+
+def origin(url: str) -> str:
+    """scheme://host, the form OrcaSlicer keeps a network grant in (it covers every port and path on the host)."""
+    m = re.match(r"^(https?)://([A-Za-z0-9.-]+)", url)
+    return f"{m.group(1)}://{m.group(2).lower()}" if m else ""
+
+
+def safe_name(name) -> bool:
+    return isinstance(name, str) and bool(NAME_RE.match(name)) and not name.startswith(".") and name.strip() == name
+
+
+def read_connection(path: Path):
+    """The farm's connection file, read without following a link, or None. Raises ValueError when it is not one."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            return None
+        raise ValueError("the connection file cannot be read") from exc
+    with os.fdopen(fd, "rb") as fh:
+        raw = fh.read(256 * 1024)
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ValueError("the connection file is not JSON") from exc
+    return validate(data)
+
+
+def validate(data) -> dict:
+    if not isinstance(data, dict) or data.get("schema") != 1:
+        raise ValueError("the connection file is not one this desktop knows")
+    url, key = data.get("url"), data.get("key")
+    if not isinstance(url, str) or not URL_RE.match(url):
+        raise ValueError("the connection has no usable farm address")
+    if not isinstance(key, str) or not KEY_RE.match(key):
+        raise ValueError("the connection has no usable key")
+    printers = []
+    for p in data.get("printers") or []:
+        if isinstance(p, dict) and safe_name(p.get("preset")) and safe_name(p.get("inherits")) and safe_name(str(p.get("name", ""))):
+            printers.append({"name": p["name"], "preset": p["preset"], "inherits": p["inherits"]})
+    skipped = [{"name": str(p.get("name", ""))[:120]} for p in data.get("skipped") or [] if isinstance(p, dict)]
+    return {"url": url.rstrip("/"), "key": key, "printers": printers, "skipped": skipped,
+            "scope": data.get("scope") if data.get("scope") in ("read", "submit", "control") else None,
+            "token_id": str(data.get("token_id") or "")[:64] or None,
+            "actor_id": data.get("actor_id") if isinstance(data.get("actor_id"), int) else None}
+
+
+def write_atomic(path: Path, text: str, mode: int = 0o644) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.ahi-{os.getpid()}")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, mode)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    os.replace(tmp, path)
+
+
+def read_json(path: Path):
+    try:
+        if path.is_symlink():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+# ---- the add-on --------------------------------------------------------------------------------------------
+
+def cloud_copy(plugins: Path) -> bool:
+    """An add-on installed from Orca Cloud: installing ours beside it would make OrcaSlicer refuse one of them."""
+    sub = plugins / "_subscribed"
+    if not sub.is_dir():
+        return False
+    for f in sub.rglob("*.py"):
+        try:
+            if f'AGENT_ID = "{AGENT_ID}"' in f.read_text(encoding="utf-8", errors="replace"):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def install_addon(url: str) -> str:
+    """Install or update the add-on and grant it the farm's address. Answers what it did, for the farm's page."""
+    if not ADDON.is_file():
+        return "no add-on in this image"
+    plugins = ORCA / "orca_plugins"
+    if cloud_copy(plugins):
+        return "the add-on from Orca Cloud is installed; it was left as it is"
+    bundled_text = ADDON.read_text(encoding="utf-8")
+    bundled = addon_version(bundled_text)
+    folder = plugins / ADDON_NAME
+    target = folder / ADDON_NAME
+    if folder.is_symlink() or target.is_symlink():
+        return "the add-on's folder is a link; it was left as it is"
+    current = ""
+    if target.is_file():
+        current = addon_version(target.read_text(encoding="utf-8", errors="replace"))
+    state_path = folder / ".install_state.json"
+    state = read_json(state_path) if state_path.exists() else None
+    fresh = not isinstance(state, dict)
+    state = state if isinstance(state, dict) else {}
+    did = f"add-on {current} kept"
+    if not current or version_tuple(current) < version_tuple(bundled):
+        folder.mkdir(parents=True, exist_ok=True)
+        write_atomic(target, bundled_text)
+        shutil.rmtree(folder / "__pycache__", ignore_errors=True)
+        state["installed_version"] = bundled
+        did = f"add-on {bundled} installed"
+    state.setdefault("installed_from", "local")
+    state.setdefault("installed_version", current or bundled)
+    state.setdefault("plugin_name", "OpenPrintHQ Print Queue")
+    if fresh:
+        state["enabled"] = True
+    perms = state.get("permissions") if isinstance(state.get("permissions"), dict) else {}
+    for k in ("fs_read", "fs_readwrite", "network_http", "network_socket", "process", "events"):
+        if not isinstance(perms.get(k), list):
+            perms[k] = []
+    for host in (origin(url), "https://openprinthq.com"):
+        if host and host not in perms["network_http"]:
+            perms["network_http"].append(host)
+    perms["threading"] = True
+    perms.setdefault("full_access", False)
+    state["permissions"] = perms
+    state.setdefault("capabilities", [])
+    write_atomic(state_path, json.dumps(state, indent=1) + "\n")
+    return did
+
+
+# ---- environment, settings, printers -----------------------------------------------------------------------
+
+def write_environment(url: str, key: str) -> None:
+    STATE.mkdir(parents=True, exist_ok=True)
+    os.chmod(STATE, 0o700)
+    write_atomic(STATE / "env", f"{ENV_URL}={url}\n{ENV_KEY}={key}\n", 0o600)
+    lines = []
+    if LABWC_ENV.is_file() and not LABWC_ENV.is_symlink():
+        lines = [ln for ln in LABWC_ENV.read_text(encoding="utf-8").splitlines()
+                 if not ln.startswith((ENV_URL + "=", ENV_KEY + "="))]
+    lines += [f"{ENV_URL}={url}", f"{ENV_KEY}={key}"]
+    write_atomic(LABWC_ENV, "\n".join(lines) + "\n", 0o600)
+
+
+def orca_conf():
+    conf = ORCA / "OrcaSlicer.conf"
+    return conf, read_json(conf)
+
+
+def use_printer_agents() -> None:
+    """On once. OrcaSlicer prints through an add-on's printer agent only with this setting on."""
+    marker = STATE / "agents-on"
+    if marker.exists():
+        return
+    conf, data = orca_conf()
+    if isinstance(data, dict) and isinstance(data.get("app"), dict):
+        data["app"]["use_printer_agents"] = True
+        write_atomic(conf, json.dumps(data, indent=1) + "\n")
+        write_atomic(marker, "1\n")
+
+
+def preset_folder() -> str:
+    _, data = orca_conf()
+    folder = ""
+    if isinstance(data, dict) and isinstance(data.get("app"), dict):
+        folder = str(data["app"].get("preset_folder") or "")
+    return folder if re.match(r"^[A-Za-z0-9_-]{1,64}$", folder) else "default"
+
+
+def add_printers(printers: list) -> list:
+    """OrcaSlicer printers for the farm's printers, in the preset folder OrcaSlicer reads now. Never replaces one."""
+    folder = preset_folder()
+    machine = ORCA / "user" / folder / "machine"
+    if any(p.is_symlink() for p in (ORCA / "user", ORCA / "user" / folder, machine) if p.exists()):
+        return []
+    added = []
+    for p in printers:
+        name = p["preset"]
+        path = machine / f"{name}.json"
+        if path.exists() or path.is_symlink():
+            continue
+        preset = {"from": "User", "inherits": p["inherits"], "name": name, "printer_settings_id": name,
+                  "printer_agent": AGENT_ID, "print_host": PRINT_HOST, "version": PRESET_VERSION}
+        if not p["inherits"].startswith("Bambu Lab "):
+            preset["host_type"] = "octoprint"
+        write_atomic(path, json.dumps(preset, indent=1) + "\n")
+        # "hold": OrcaSlicer leaves it out of account sync until someone changes and saves it.
+        user_id = folder if folder != "default" else ""
+        write_atomic(machine / f"{name}.info",
+                     f"sync_info = hold\nuser_id = {user_id}\nsetting_id = \nbase_id = \nupdated_time = {int(time.time())}\n")
+        added.append(name)
+    return added
+
+
+def refresh() -> None:
+    """Without a new connection: put back what a desktop that was connected needs."""
+    saved = read_json(STATE / "connection.json")
+    env = {}
+    try:
+        for ln in (STATE / "env").read_text(encoding="utf-8").splitlines():
+            k, _, v = ln.partition("=")
+            env[k] = v
+    except OSError:
+        return
+    if not isinstance(saved, dict) or not URL_RE.match(env.get(ENV_URL, "")) or not KEY_RE.match(env.get(ENV_KEY, "")):
+        return
+    install_addon(env[ENV_URL])
+    write_environment(env[ENV_URL], env[ENV_KEY])
+    added = add_printers([p for p in saved.get("printers", []) if isinstance(p, dict)
+                          and safe_name(p.get("preset")) and safe_name(p.get("inherits"))])
+    if added:
+        log("printers added: " + ", ".join(added))
+
+
+def apply_connection(conn: dict) -> dict:
+    addon = install_addon(conn["url"])
+    write_environment(conn["url"], conn["key"])
+    use_printer_agents()
+    added = add_printers(conn["printers"])
+    write_atomic(STATE / "connection.json", json.dumps(
+        {"url": conn["url"], "printers": conn["printers"], "skipped": conn["skipped"]}, indent=1) + "\n", 0o600)
+    log(f"connected to {conn['url']}: {addon}; printers added: {', '.join(added) or 'none new'}")
+    return {"addon": addon, "added": added}
+
+
+def as_user() -> None:
+    """Drop to the desktop's user for every write, when started as root."""
+    if os.geteuid() != 0:
+        return
+    import pwd
+    pw = pwd.getpwnam(USER)
+    os.setgroups([])
+    os.setgid(pw.pw_gid)
+    os.setuid(pw.pw_uid)
+    os.environ["HOME"] = str(ROOT)
+    os.umask(0o022)
+
+
+def main(argv: list) -> int:
+    if len(argv) < 2 or argv[1] != "apply":
+        print(__doc__.split("\n\n")[1].strip())
+        return 2
+    path = INBOX / CONNECTION
+    error = None
+    conn = None
+    try:
+        conn = read_connection(path)
+    except ValueError as exc:
+        error = str(exc)
+    if conn is not None or error:
+        # It holds the key: read once, then gone, whatever happens next.
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    as_user()
+    if conn is None and not error:
+        refresh()
+        return 0
+    marker = {"schema": 1, "applied_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    if conn is not None:
+        try:
+            did = apply_connection(conn)
+            marker.update({"addon": did["addon"], "printers": [{"name": p["name"], "preset": p["preset"]} for p in conn["printers"]],
+                           "skipped": conn["skipped"], "scope": conn["scope"], "token_id": conn["token_id"],
+                           "actor_id": conn["actor_id"]})
+        except OSError as exc:
+            error = f"the desktop could not set it up ({exc.strerror or exc})"
+    if error:
+        log("not connected: " + error)
+        marker["error"] = error
+        if conn is not None:
+            marker.update({"token_id": conn["token_id"], "actor_id": conn["actor_id"]})
+    try:
+        write_atomic(INBOX / APPLIED, json.dumps(marker, indent=1) + "\n")
+    except OSError as exc:
+        log(f"could not tell the farm: {exc}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -129,6 +129,16 @@ class Conversion(unittest.TestCase):
             self.assertTrue((s6 / f"init-ahi-browser/dependencies.d/{dep}").exists(), dep)
         self.assertTrue((s6 / "init-config-end/dependencies.d/init-ahi-browser").exists())
         self.assertTrue((s6 / "user/contents.d/init-ahi-browser").exists())
+        # Q9: the farm's connection, taken before OrcaSlicer starts and when it closes.
+        self.assertTrue(os.access(self.root / convert.FARM_CONNECT, os.X_OK))
+        self.assertEqual((s6 / "init-ahi-farm/type").read_text().strip(), "oneshot")
+        for dep in ("init-ahi-orca", "init-ahi-files"):
+            self.assertTrue((s6 / f"init-ahi-farm/dependencies.d/{dep}").exists(), dep)
+        self.assertTrue((s6 / "init-config-end/dependencies.d/init-ahi-farm").exists())
+        self.assertTrue((s6 / "user/contents.d/init-ahi-farm").exists())
+        inbox = self.read(f"{convert.S6}/svc-ahi-inbox/run")
+        self.assertIn("ahi-farm-connect apply", inbox)
+        self.assertNotIn(". /config/.config/ahi-farm/env", inbox)   # read as values, never run as root
 
     def test_the_light_values_are_left_alone(self):
         before = self.read(convert.GLOBAL_CSS)

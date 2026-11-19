@@ -42,6 +42,10 @@ if [ -n "${IMAGE:-}" ]; then
     grep -q "file:///" /usr/lib/firefox/distribution/policies.json
     test -x /etc/s6-overlay/s6-rc.d/init-ahi-browser/run
     ! /usr/local/bin/ahi-open-url file:///etc/passwd 2> /dev/null
+    test -x /usr/local/bin/ahi-farm-connect
+    test -x /etc/s6-overlay/s6-rc.d/init-ahi-farm/run
+    grep -q "^VERSION = " /opt/ahi/addon/openprinthq_print_queue.py
+    grep -q "OPENPRINTHQ_API_KEY" /opt/ahi/addon/openprinthq_print_queue.py
     echo "image: every change in place"
   '
 fi

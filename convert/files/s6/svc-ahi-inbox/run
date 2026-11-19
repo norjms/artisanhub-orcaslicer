@@ -21,8 +21,38 @@ else
   display_up() { [[ -S "/tmp/.X11-unix/X${DISPLAY#:}" ]]; }
 fi
 started=$(date +%s)
+orca_running() { pgrep -u abc -f /opt/orcaslicer/bin/orca-slicer >/dev/null; }
+# Q9: a connection to the farm (".farm.json") is taken while OrcaSlicer is closed, as OrcaSlicer rewrites its
+# settings when it quits and reads printers when it starts: when the person closes it, ahi-farm-connect takes
+# the connection and OrcaSlicer opens again, connected.
+closed_since=0
+take_connection() {
+  [[ -f "${INBOX}/.farm.json" && -x /usr/local/bin/ahi-farm-connect ]] || { closed_since=0; return; }
+  if orca_running; then closed_since=0; return; fi
+  (( closed_since )) || closed_since=$(date +%s)
+  (( $(date +%s) - closed_since >= 3 )) || return
+  closed_since=0
+  /usr/local/bin/ahi-farm-connect apply || true
+  if display_up; then
+    echo "[ahi-inbox] opening OrcaSlicer, connected to the farm"
+    (
+      # The person's own file: read as values, never run, and only these two names.
+      env_file=/config/.config/ahi-farm/env
+      if [[ -f "${env_file}" && ! -L "${env_file}" ]]; then
+        while IFS='=' read -r k v; do
+          case "${k}" in
+            OPENPRINTHQ_URL|OPENPRINTHQ_API_KEY) [[ "${v}" =~ ^[A-Za-z0-9._~:/-]+$ ]] && export "${k}=${v}" ;;
+          esac
+        done < "${env_file}"
+      fi
+      exec s6-setuidgid abc /opt/orcaslicer/AppRun
+    ) >/dev/null 2>&1 &
+    started=$(date +%s)
+  fi
+}
 while true; do
   sleep 2
+  take_connection
   shopt -s nullglob
   markers=("${INBOX}"/.open-*)
   shopt -u nullglob
@@ -31,7 +61,7 @@ while true; do
   display_up || { started=$(date +%s); continue; }
   # Wait for OrcaSlicer's own start, so a sent file joins its window rather than racing it; after a minute
   # without one (closed by the person), the file starts one.
-  if ! pgrep -u abc -f /opt/orcaslicer/bin/orca-slicer >/dev/null && (( $(date +%s) - started < 60 )); then
+  if ! orca_running && (( $(date +%s) - started < 60 )); then
     continue
   fi
   for marker in "${markers[@]}"; do

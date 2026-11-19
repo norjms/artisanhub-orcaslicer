@@ -26,6 +26,12 @@ OrcaSlicer
   source is the upstream file and the change in convert/convert.py. OrcaSlicer's source is at the address
   above, at the tag of the version named in upstream.env.
 
+OpenPrintHQ Print Queue (the OrcaSlicer add-on)
+  https://github.com/norjms/artisan-hub-farm (control-plane/orcaslicer-addon)
+  Copyright (C) 2026 James Norman. GNU Affero General Public License, version 3 or later
+  (LICENSES/AGPL-3.0.txt). Copied unchanged into /opt/ahi/addon at the commit the Dockerfile names; its source
+  is that file at that commit.
+
 Fonts
   Manrope, Sora and JetBrains Mono, SIL Open Font License 1.1: the web fonts from the fontsource packages
   (their licence files are copied beside them in the image), and Manrope and JetBrains Mono for the desktop

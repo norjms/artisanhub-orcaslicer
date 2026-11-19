@@ -34,6 +34,15 @@ RUN apt-get update \
  && fc-cache -f \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
+# Q9: the OrcaSlicer add-on (OpenPrintHQ Print Queue, AGPL-3.0) that prints to the hub's queue, from
+# artisan-hub-farm at a pinned commit, checked against its hash. ahi-farm-connect installs it for the person.
+ARG ADDON_COMMIT=4f1ef7cc598085cc417ef8c065e3f44450dc4837
+ARG ADDON_SHA256=6807d4e57e3e03ac661e9809d0565a889a8e2289a02d1ce0a1da5de25b2c8c75
+RUN mkdir -p /opt/ahi/addon \
+ && curl -fsSL -o /opt/ahi/addon/openprinthq_print_queue.py \
+      "https://raw.githubusercontent.com/norjms/artisan-hub-farm/${ADDON_COMMIT}/control-plane/orcaslicer-addon/plugin/openprinthq_print_queue.py" \
+ && echo "${ADDON_SHA256}  /opt/ahi/addon/openprinthq_print_queue.py" | sha256sum -c - \
+ && chmod 644 /opt/ahi/addon/openprinthq_print_queue.py
 COPY convert /tmp/ahi-convert
 COPY --from=fonts /fonts /tmp/ahi-convert/files/dashboard/fonts
 RUN python3 /tmp/ahi-convert/convert.py / && rm -rf /tmp/ahi-convert
